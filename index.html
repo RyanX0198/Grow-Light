@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>AeroGrow Pro - 智慧植物养护</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        
+        .glass {
+            background: rgba(255, 255, 255, 0.08);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        
+        input[type=range] {
+            -webkit-appearance: none;
+            background: transparent;
+        }
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            height: 20px;
+            width: 20px;
+            border-radius: 50%;
+            background: #10B981;
+            cursor: pointer;
+            margin-top: -8px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            cursor: pointer;
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+        }
+        
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        .page { display: none; animation: fadeIn 0.3s; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .scanning-radar {
+            background: conic-gradient(from 0deg, transparent, rgba(16, 185, 129, 0.4), transparent);
+            animation: radar 2s linear infinite;
+        }
+        @keyframes radar { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        .adapt-good { background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.3); }
+        .adapt-warning { background: rgba(245, 158, 11, 0.2); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.3); }
+        
+        .chart-tooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.9);
+            border: 1px solid rgba(16,185,129,0.5);
+            border-radius: 8px;
+            padding: 8px 12px;
+            pointer-events: none;
+            font-size: 11px;
+            color: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            display: none;
+            z-index: 100;
+        }
+
+        /* AR风格植物标记 */
+        .ar-plant-marker {
+            position: absolute;
+            transform: translate(-50%, -50%);
+            z-index: 20;
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(-50%, -50%) translateY(0px); }
+            50% { transform: translate(-50%, -50%) translateY(-3px); }
+        }
+        
+        .ar-plant-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            border: 2px solid rgba(255,255,255,0.8);
+            box-shadow: 0 0 0 2px rgba(16,185,129,0.6), 0 4px 12px rgba(0,0,0,0.4);
+            position: relative;
+            z-index: 2;
+        }
+        
+        .ar-plant-icon::before {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            border: 1px solid rgba(16,185,129,0.4);
+            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+        }
+        
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.8; }
+            100% { transform: scale(1.3); opacity: 0; }
+        }
+        
+        .ar-data-card {
+            position: absolute;
+            top: -45px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.85);
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            padding: 6px 10px;
+            white-space: nowrap;
+            font-size: 10px;
+            backdrop-filter: blur(8px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        
+        .ar-data-card::after {
+            content: '';
+            position: absolute;
+            bottom: -5px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-top: 5px solid rgba(0,0,0,0.85);
+        }
+        
+        .ar-line {
+            position: absolute;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.6), transparent);
+            transform-origin: left center;
+            pointer-events: none;
+        }
+
+        .heatmap-tooltip {
+            position: absolute;
+            background: rgba(0,0,0,0.9);
+            border: 1px solid rgba(16,185,129,0.5);
+            border-radius: 8px;
+            padding: 8px 12px;
+            pointer-events: none;
+            font-size: 11px;
+            color: white;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            display: none;
+            z-index: 100;
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body class="bg-gray-950 text-white h-screen overflow-hidden relative">
+
+    <!-- 状态栏 -->
+    <div class="absolute top-0 w-full h-12 bg-black/30 backdrop-blur-md z-50 flex items-center justify-between px-4 text-xs">
+        <span id="clock">12:30</span>
+        <div class="flex gap-2 items-center">
+            <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+            <span>AeroGrow-Pro</span>
+        </div>
+        <span>100%</span>
+    </div>
+
+    <!-- Onboarding 流程 -->
+    <div id="onboarding-flow" class="absolute inset-x-0 top-0 bottom-20 bg-gray-950 z-40 flex flex-col hidden">
+        <div class="w-full h-1 bg-gray-800 mt-12">
+            <div id="onboarding-progress" class="h-full bg-green-500 transition-all duration-500" style="width: 0%"></div>
+        </div>
+
+        <div id="step-1" class="onboarding-step flex-1 flex flex-col items-center justify-center p-6 active">
+            <div class="w-28 h-28 mb-6 relative">
+                <div class="absolute inset-0 bg-green-500/20 rounded-full animate-ping"></div>
+                <div class="relative w-full h-full bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center text-4xl shadow-2xl">🌱</div>
+            </div>
+            <h1 class="text-2xl font-bold mb-2 text-center">AeroGrow Pro</h1>
+            <p class="text-gray-400 text-center mb-6 max-w-xs text-sm">为您的植物群落创建最佳光环境。</p>
+            <button onclick="nextStep(2)" class="w-full max-w-xs bg-green-600 hover:bg-green-500 text-white py-3 rounded-xl font-semibold shadow-lg">开始配置</button>
+            <button onclick="skipOnboarding()" class="mt-4 text-sm text-gray-500 hover:text-white">跳过，直接控制灯光</button>
+        </div>
+
+        <div id="step-2" class="onboarding-step flex-1 flex flex-col hidden relative overflow-hidden">
+            <div class="absolute inset-0 bg-gray-900 flex items-center justify-center">
+                <div class="w-64 h-64 rounded-full border-2 border-green-500/30 relative">
+                    <div class="absolute inset-0 rounded-full scanning-radar"></div>
+                </div>
+                <div class="absolute bottom-32 text-center">
+                    <div class="text-2xl mb-2">🪴 🌿 🎋</div>
+                    <div class="text-sm text-gray-400">检测到 3 株植物</div>
+                </div>
+            </div>
+        </div>
+
+        <div id="step-3" class="onboarding-step flex-1 flex flex-col hidden p-6 pt-16 overflow-y-auto">
+            <h2 class="text-xl font-bold mb-4">选择主栽植物</h2>
+            <div class="space-y-3 mb-6">
+                <div class="glass rounded-xl p-4 border-2 border-green-500 cursor-pointer" onclick="selectPrimary(1)">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-green-900/50 rounded-full flex items-center justify-center text-2xl">🌿</div>
+                        <div>
+                            <div class="font-semibold">龟背竹</div>
+                            <div class="text-xs text-gray-400 mt-0.5">需光量: 高 (12 DLI)</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="glass rounded-xl p-4 border-2 border-transparent opacity-50 cursor-pointer" onclick="selectPrimary(2)">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 bg-blue-900/50 rounded-full flex items-center justify-center text-2xl">🌱</div>
+                        <div>
+                            <div class="font-semibold">绿萝</div>
+                            <div class="text-xs text-gray-400 mt-0.5">需光量: 中 (8 DLI)</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <button onclick="completeOnboarding()" class="w-full bg-green-600 hover:bg-green-500 text-white py-3 rounded-xl font-semibold shadow-lg">确认配置</button>
+        </div>
+    </div>
+
+    <!-- 主内容区 -->
+    <div id="main-app" class="h-full pb-20 pt-12 overflow-y-auto no-scrollbar relative">
+        
+        <!-- 首页（植物页） -->
+        <div id="page-plants" class="page active px-5 py-4">
+            <div class="mb-4 flex items-center justify-between">
+                <div>
+                    <h1 class="text-xl font-bold" id="zone-name">客厅书架区</h1>
+                    <p class="text-gray-400 text-sm" id="plant-count">3株植物 · 主栽: 龟背竹</p>
+                </div>
+                <button onclick="startOnboarding()" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-lg hover:bg-white/20 transition-colors">+</button>
+            </div>
+
+            <!-- 统计栏 -->
+            <div class="glass rounded-xl p-4 mb-4">
+                <div class="grid grid-cols-4 gap-2 text-center divide-x divide-white/10">
+                    <div>
+                        <div class="text-[10px] text-gray-400 mb-1">目标DLI</div>
+                        <div class="text-lg font-bold text-green-400">14.2</div>
+                        <div class="text-[9px] text-gray-500">mol/m²/d</div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-gray-400 mb-1">实际DLI</div>
+                        <div class="text-lg font-bold text-white">10.8</div>
+                        <div class="text-[9px] text-gray-500">mol/m²/d</div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-gray-400 mb-1">环境光</div>
+                        <div class="text-lg font-bold text-emerald-600">310</div>
+                        <div class="text-[9px] text-gray-500">μmol/m²s</div>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-gray-400 mb-1">补光功率</div>
+                        <div class="text-lg font-bold text-green-300">150</div>
+                        <div class="text-[9px] text-gray-500">μmol/m²s</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 区域PPFD曲线图 (首页保持时间曲线) -->
+            <div class="glass rounded-xl p-4 mb-4 relative">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-semibold text-sm">今日区域光环境</h3>
+                    <div class="flex items-center gap-2 text-[10px]">
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-500"></span>目标</span>
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-800"></span>自然</span>
+                        <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-400"></span>补光</span>
+                    </div>
+                </div>
+                
+                <div class="relative h-56 bg-gray-900/30 rounded-lg overflow-hidden cursor-crosshair" id="chartContainer">
+                    <canvas id="ppfdCanvasDisplay" class="w-full h-full"></canvas>
+                    <div id="chartTooltip" class="chart-tooltip"></div>
+                </div>
+
+                <div class="flex justify-between mt-3 text-[10px] text-gray-400 px-1">
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-1">
+                            <div class="w-6 h-1.5 bg-emerald-900 rounded-sm"></div>
+                            <span>自然光</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <div class="w-6 h-1.5 bg-green-400 rounded-sm"></div>
+                            <span>系统补光</span>
+                        </div>
+                    </div>
+                    <div class="text-green-400 font-medium">实时自动补偿中</div>
+                </div>
+            </div>
+
+            <!-- 植物列表 -->
+            <div class="space-y-2 mb-4">
+                <div class="text-xs text-gray-500 mb-2 uppercase tracking-wider">区域植物</div>
+                
+                <div class="glass rounded-lg p-3 border-l-4 border-green-500 bg-green-900/10">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-green-900/50 flex items-center justify-center text-xl border-2 border-green-500">🌿</div>
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <span class="font-semibold text-sm">龟背竹</span>
+                                    <span class="text-[9px] bg-green-500 text-white px-1.5 py-0.5 rounded">主栽</span>
+                                </div>
+                                <div class="text-xs text-gray-400 mt-0.5">目标DLI: 12 · 当前76%</div>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-lg font-bold text-green-400">9.1<span class="text-xs font-normal text-gray-400">/12</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass rounded-lg p-3 border-l-4 border-emerald-600/50">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-emerald-900/30 flex items-center justify-center text-xl">🌱</div>
+                            <div>
+                                <div class="font-semibold text-sm">绿萝</div>
+                                <div class="text-xs text-gray-400 mt-0.5">适应良好</div>
+                            </div>
+                        </div>
+                        <span class="text-[10px] px-2 py-1 rounded adapt-good">耐受范围内</span>
+                    </div>
+                </div>
+
+                <div class="glass rounded-lg p-3 border-l-4 border-yellow-500/50">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-full bg-yellow-900/30 flex items-center justify-center text-xl">🎋</div>
+                            <div>
+                                <div class="font-semibold text-sm">散尾葵</div>
+                                <div class="text-xs text-gray-400 mt-0.5">建议前移10cm</div>
+                            </div>
+                        </div>
+                        <span class="text-[10px] px-2 py-1 rounded adapt-warning">边缘光弱</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 灯光页 - AR风格空间热力图 -->
+        <div id="page-light" class="page px-5 py-4">
+            <div class="mb-4">
+                <h2 class="text-xl font-bold">灯光控制</h2>
+                <p class="text-gray-400 text-sm">AR空间光场分布 • 60×40cm照射范围</p>
+            </div>
+
+            <div class="glass rounded-xl p-4 mb-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center text-xl">💡</div>
+                    <div>
+                        <div class="font-medium">区域补光灯</div>
+                        <div class="text-xs text-gray-400" id="light-status">运行中 · 功率58W</div>
+                    </div>
+                </div>
+                <button onclick="toggleLightPower()" id="lightPowerBtn" class="w-14 h-8 bg-green-600 rounded-full relative transition-colors">
+                    <div class="absolute right-1 top-1 w-6 h-6 bg-white rounded-full shadow transition-transform"></div>
+                </button>
+            </div>
+
+            <!-- AR风格空间热力图 -->
+            <div class="glass rounded-xl p-4 mb-4">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-semibold text-sm">PPFD 空间分布热力图</h3>
+                    <div class="flex items-center gap-2 text-[10px] text-gray-400">
+                        <span class="w-2 h-2 rounded-full bg-red-500"></span>高
+                        <span class="w-2 h-2 rounded-full bg-yellow-500"></span>中
+                        <span class="w-2 h-2 rounded-full bg-green-500"></span>低
+                    </div>
+                </div>
+                
+                <!-- 热力图容器 -->
+                <div class="relative h-72 bg-gray-900/50 rounded-lg overflow-hidden cursor-crosshair" id="heatmapContainer" style="background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 20px 20px;">
+                    <canvas id="heatmapCanvas" class="w-full h-full absolute inset-0"></canvas>
+                    
+                    <!-- 中心光源标记（AR风格） -->
+                    <div class="absolute left-1/2 top-1/3 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+                        <div class="w-6 h-6 bg-white rounded-full shadow-[0_0_30px_rgba(255,255,255,0.9)] animate-pulse border-2 border-yellow-400"></div>
+                        <div class="absolute -inset-2 border border-white/30 rounded-full animate-ping"></div>
+                    </div>
+                    
+                    <!-- AR植物标记 - 龟背竹（中心高值区） -->
+                    <div class="ar-plant-marker" style="left: 50%; top: 35%;" onclick="showPlantDetail('龟背竹', 420)">
+                        <div class="ar-data-card">
+                            <div class="flex items-center gap-1 mb-0.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+                                <span class="text-gray-300">龟背竹</span>
+                            </div>
+                            <div class="text-lg font-bold text-orange-400 leading-none">420</div>
+                            <div class="text-[8px] text-gray-500 mt-0.5">μmol/m²s</div>
+                        </div>
+                        <div class="ar-plant-icon bg-orange-500/30">🌿</div>
+                    </div>
+                    
+                    <!-- AR植物标记 - 绿萝（左侧中等区） -->
+                    <div class="ar-plant-marker" style="left: 28%; top: 55%; animation-delay: 0.5s;" onclick="showPlantDetail('绿萝', 380)">
+                        <div class="ar-data-card">
+                            <div class="flex items-center gap-1 mb-0.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>
+                                <span class="text-gray-300">绿萝</span>
+                            </div>
+                            <div class="text-lg font-bold text-yellow-400 leading-none">380</div>
+                            <div class="text-[8px] text-gray-500 mt-0.5">μmol/m²s</div>
+                        </div>
+                        <div class="ar-plant-icon bg-yellow-500/30">🌱</div>
+                    </div>
+                    
+                    <!-- AR植物标记 - 散尾葵（右下边缘区） -->
+                    <div class="ar-plant-marker" style="left: 72%; top: 65%; animation-delay: 1s;" onclick="showPlantDetail('散尾葵', 240)">
+                        <div class="ar-data-card">
+                            <div class="flex items-center gap-1 mb-0.5">
+                                <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                <span class="text-gray-300">散尾葵</span>
+                                <span class="text-[8px] text-yellow-400 ml-1">⚠️</span>
+                            </div>
+                            <div class="text-lg font-bold text-blue-400 leading-none">240</div>
+                            <div class="text-[8px] text-gray-500 mt-0.5">μmol/m²s</div>
+                        </div>
+                        <div class="ar-plant-icon bg-blue-500/30 border-yellow-400/50">🎋</div>
+                    </div>
+                    
+                    <!-- 扫描线效果 -->
+                    <div class="absolute inset-0 pointer-events-none overflow-hidden">
+                        <div class="h-0.5 bg-gradient-to-r from-transparent via-green-400/50 to-transparent w-full absolute animate-[scan_3s_linear_infinite]"></div>
+                    </div>
+                    
+                    <!-- 悬浮提示 -->
+                    <div id="heatmapTooltip" class="heatmap-tooltip"></div>
+                </div>
+
+                <!-- 等值线说明 -->
+                <div class="flex justify-between mt-3 text-[10px] text-gray-400 px-2">
+                    <div class="flex items-center gap-2">
+                        <div class="flex items-center gap-1">
+                            <div class="w-3 h-3 rounded-full border-2 border-red-500/50 bg-red-500/20"></div>
+                            <span>>400 充足</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <div class="w-3 h-3 rounded-full border-2 border-yellow-500/50 bg-yellow-500/20"></div>
+                            <span>300-400 良好</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <div class="w-3 h-3 rounded-full border-2 border-green-500/50 bg-green-500/20"></div>
+                            <span>200-300 中等</span>
+                        </div>
+                        <div class="flex items-center gap-1">
+                            <div class="w-3 h-3 rounded-full border-2 border-blue-500/50 bg-blue-500/20"></div>
+                            <span><200 不足</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 实时数据显示 -->
+            <div class="grid grid-cols-3 gap-3 mb-4">
+                <div class="glass rounded-lg p-3 text-center">
+                    <div class="text-[10px] text-gray-400 mb-1">中心峰值</div>
+                    <div class="text-xl font-bold text-orange-400" id="centerDisplay">480</div>
+                    <div class="text-[9px] text-gray-500">μmol/m²s</div>
+                </div>
+                <div class="glass rounded-lg p-3 text-center">
+                    <div class="text-[10px] text-gray-400 mb-1">平均光强</div>
+                    <div class="text-xl font-bold text-yellow-400">340</div>
+                    <div class="text-[9px] text-gray-500">μmol/m²s</div>
+                </div>
+                <div class="glass rounded-lg p-3 text-center">
+                    <div class="text-[10px] text-gray-400 mb-1">均匀度</div>
+                    <div class="text-xl font-bold text-green-400">78%</div>
+                    <div class="text-[9px] text-gray-500">目标 >75%</div>
+                </div>
+            </div>
+
+            <div class="glass rounded-xl p-4 mb-4">
+                <h3 class="font-semibold text-sm mb-4">光强调节</h3>
+                <div class="mb-4">
+                    <div class="flex justify-between text-xs mb-2">
+                        <span class="text-gray-400">中心亮度 (PPFD)</span>
+                        <span id="centerPPFD" class="text-orange-400 font-bold">480 μmol/m²s</span>
+                    </div>
+                    <input type="range" min="100" max="800" value="480" class="w-full" oninput="updateHeatmap(this.value)">
+                    <div class="flex justify-between text-[10px] text-gray-500 mt-1">
+                        <span>100</span>
+                        <span>450</span>
+                        <span>800</span>
+                    </div>
+                </div>
+                
+                <div class="flex gap-2">
+                    <button onclick="applyHeatmapSettings()" class="flex-1 bg-green-600 hover:bg-green-500 text-white py-3 rounded-xl font-medium transition-colors text-sm">应用设置</button>
+                    <button onclick="optimizeLayout()" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-xl font-medium transition-colors text-sm">AR优化布局</button>
+                </div>
+            </div>
+
+            <div class="glass rounded-xl p-4">
+                <h3 class="font-semibold text-sm mb-4">光谱控制</h3>
+                <div class="space-y-4">
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-blue-400">450nm 蓝光</span>
+                            <span id="blueValue">65%</span>
+                        </div>
+                        <input type="range" min="0" max="100" value="65" class="w-full" oninput="updateSpectrum('blue', this.value)">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-white">CCT 色温</span>
+                            <span id="cctValue">4000K</span>
+                        </div>
+                        <input type="range" min="2700" max="6500" value="4000" class="w-full" oninput="updateSpectrum('cct', this.value)">
+                    </div>
+                    <div>
+                        <div class="flex justify-between text-xs mb-1">
+                            <span class="text-purple-400">730nm 远红光</span>
+                            <span id="farRedValue">2h/夜</span>
+                        </div>
+                        <input type="range" min="0" max="4" step="0.5" value="2" class="w-full" oninput="updateSpectrum('farred', this.value)">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 我的页 -->
+        <div id="page-me" class="page px-5 py-4">
+            <div class="mb-6">
+                <h2 class="text-xl font-bold">我的</h2>
+                <p class="text-gray-400 text-sm">设备与系统</p>
+            </div>
+
+            <div class="glass rounded-xl p-4 mb-4">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="w-12 h-12 rounded-full bg-blue-900/50 flex items-center justify-center text-xl">💡</div>
+                    <div>
+                        <div class="font-medium">AeroGrow-Pro-01</div>
+                        <div class="text-xs text-green-400">● 在线</div>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-2 text-center text-xs">
+                    <div class="bg-gray-800/30 rounded p-2">
+                        <div class="text-gray-400 text-[10px]">照射范围</div>
+                        <div class="mt-1 font-medium">60×40cm</div>
+                    </div>
+                    <div class="bg-gray-800/30 rounded p-2">
+                        <div class="text-gray-400 text-[10px]">运行时长</div>
+                        <div class="mt-1 font-medium">156小时</div>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="resetApp()" class="w-full glass rounded-xl p-4 text-red-400 border border-red-500/30 hover:bg-red-500/10 transition-colors text-sm">
+                重置所有数据
+            </button>
+        </div>
+    </div>
+
+    <!-- 底部导航 -->
+    <div id="bottom-nav" class="absolute bottom-0 w-full bg-gray-900/95 backdrop-blur-lg border-t border-white/10 px-6 py-3 pb-6 z-50">
+        <div class="flex justify-around items-center">
+            <button onclick="navigate('plants')" class="nav-btn active flex flex-col items-center gap-1 text-green-400" data-page="plants">
+                <span class="text-xl">🌿</span>
+                <span class="text-[10px]">植物</span>
+            </button>
+            <button onclick="navigate('light')" class="nav-btn flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors" data-page="light">
+                <span class="text-xl">💡</span>
+                <span class="text-[10px]">灯光</span>
+            </button>
+            <button onclick="navigate('me')" class="nav-btn flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors" data-page="me">
+                <span class="text-xl">⚙️</span>
+                <span class="text-[10px]">我的</span>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        let currentStep = 1;
+        let hasPlants = true;
+        let isLightOn = true;
+        let currentCenterPPFD = 480;
+
+        window.onload = function() {
+            initCanvases();
+            updateClock();
+            setInterval(updateClock, 1000);
+            setTimeout(() => {
+                if(!hasPlants) document.getElementById('onboarding-flow').classList.remove('hidden');
+            }, 100);
+        };
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').textContent = now.toLocaleTimeString('zh-CN', {hour: '2-digit', minute:'2-digit'});
+        }
+
+        function nextStep(step) {
+            document.getElementById(`step-${currentStep}`).classList.add('hidden');
+            currentStep = step;
+            document.getElementById(`step-${currentStep}`).classList.remove('hidden');
+            const progress = ((currentStep - 1) / 2) * 100;
+            document.getElementById('onboarding-progress').style.width = progress + '%';
+            if(step === 2) setTimeout(() => nextStep(3), 2000);
+        }
+
+        function selectPrimary(id) {
+            document.querySelectorAll('#step-3 .glass').forEach((el, idx) => {
+                if(idx + 1 === id) {
+                    el.classList.add('border-green-500');
+                    el.classList.remove('border-transparent', 'opacity-50');
+                } else {
+                    el.classList.remove('border-green-500');
+                    el.classList.add('border-transparent', 'opacity-50');
+                }
+            });
+        }
+
+        function completeOnboarding() {
+            hasPlants = true;
+            document.getElementById('onboarding-flow').classList.add('hidden');
+            document.getElementById('plant-count').textContent = '3株植物 · 主栽: 龟背竹';
+            showToast('配置完成');
+            drawDisplayCurve();
+        }
+
+        function skipOnboarding() {
+            document.getElementById('onboarding-flow').classList.add('hidden');
+        }
+
+        function startOnboarding() {
+            currentStep = 1;
+            document.getElementById('onboarding-progress').style.width = '0%';
+            document.getElementById('step-1').classList.remove('hidden');
+            document.getElementById('step-2').classList.add('hidden');
+            document.getElementById('step-3').classList.add('hidden');
+            document.getElementById('onboarding-flow').classList.remove('hidden');
+        }
+
+        function navigate(page) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById(`page-${page}`).classList.add('active');
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                if(btn.dataset.page === page) {
+                    btn.classList.add('text-green-400');
+                    btn.classList.remove('text-gray-400');
+                } else {
+                    btn.classList.remove('text-green-400');
+                    btn.classList.add('text-gray-400');
+                }
+            });
+            if(page === 'plants') {
+                setTimeout(drawDisplayCurve, 100);
+            } else if(page === 'light') {
+                setTimeout(initHeatmap, 100);
+            }
+        }
+
+        function initCanvases() {
+            const canvasDisplay = document.getElementById('ppfdCanvasDisplay');
+            if(canvasDisplay) {
+                const resize = () => {
+                    const rect = canvasDisplay.parentElement.getBoundingClientRect();
+                    canvasDisplay.width = rect.width * window.devicePixelRatio;
+                    canvasDisplay.height = rect.height * window.devicePixelRatio;
+                    canvasDisplay.getContext('2d').scale(window.devicePixelRatio, window.devicePixelRatio);
+                    drawDisplayCurve();
+                    initChartInteraction();
+                };
+                window.addEventListener('resize', resize);
+                resize();
+            }
+        }
+
+        // 生成平滑的曲线数据点（时间曲线用）
+        function generateSmoothCurve() {
+            const points = [];
+            for(let t=0; t<=1; t+=0.02) {
+                const hour = t * 24;
+                let natural = 0;
+                let boost = 0;
+                
+                if(hour > 5 && hour < 19) {
+                    const sunAngle = (hour - 5) / 14 * Math.PI;
+                    natural = Math.sin(sunAngle) * 0.55;
+                    const target = 0.85;
+                    const deficit = target - natural;
+                    if(deficit > 0.1) {
+                        boost = deficit * (0.8 + 0.2 * Math.sin(sunAngle * 2));
+                    }
+                }
+                
+                if(hour >= 18 && hour <= 20) {
+                    const nightPhase = (hour - 18) / 2;
+                    boost = 0.08 * Math.sin(nightPhase * Math.PI);
+                }
+                
+                points.push({hour, natural, boost, total: natural + boost});
+            }
+            return points;
+        }
+
+        // ==================== 首页时间曲线（保持原样） ====================
+        function drawDisplayCurve() {
+            const canvas = document.getElementById('ppfdCanvasDisplay');
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width / window.devicePixelRatio;
+            const height = canvas.height / window.devicePixelRatio;
+            const data = generateSmoothCurve();
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            const padding = {top: 40, bottom: 30, left: 50, right: 20};
+            const chartW = width - padding.left - padding.right;
+            const chartH = height - padding.top - padding.bottom;
+            const maxY = 1.0;
+            const getX = (h) => padding.left + (h / 24) * chartW;
+            const getY = (v) => padding.top + chartH - (v / maxY) * chartH;
+            
+            // 1. 绘制背景网格
+            ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+            ctx.lineWidth = 1;
+            for(let i=0; i<=5; i++) {
+                const y = padding.top + (chartH/5)*i;
+                ctx.beginPath();
+                ctx.moveTo(padding.left, y);
+                ctx.lineTo(width - padding.right, y);
+                ctx.stroke();
+            }
+            for(let i=0; i<=24; i+=2) {
+                const x = getX(i);
+                ctx.beginPath();
+                ctx.moveTo(x, padding.top);
+                ctx.lineTo(x, height - padding.bottom);
+                ctx.stroke();
+            }
+            
+            // 2. 绘制目标线（带发光效果）
+            const targetY = getY(0.85);
+            ctx.save();
+            ctx.shadowColor = 'rgba(16, 185, 129, 0.6)';
+            ctx.shadowBlur = 15;
+            ctx.beginPath();
+            ctx.setLineDash([8, 4]);
+            ctx.strokeStyle = '#34D399';
+            ctx.lineWidth = 2;
+            ctx.moveTo(padding.left, targetY);
+            ctx.lineTo(width - padding.right, targetY);
+            ctx.stroke();
+            ctx.restore();
+            
+            // 目标线标签
+            const targetText = 'TARGET DLI 14.2';
+            ctx.font = 'bold 11px Inter';
+            const textW = ctx.measureText(targetText).width;
+            ctx.fillStyle = 'rgba(0,0,0,0.6)';
+            ctx.fillRect(width - padding.right - textW - 10, targetY - 18, textW + 10, 16);
+            ctx.fillStyle = '#34D399';
+            ctx.textAlign = 'right';
+            ctx.fillText(targetText, width - padding.right - 5, targetY - 6);
+            
+            // 3. 绘制自然光区域
+            ctx.beginPath();
+            ctx.moveTo(getX(0), getY(0));
+            data.forEach(p => {
+                ctx.lineTo(getX(p.hour), getY(p.natural));
+            });
+            ctx.lineTo(getX(24), getY(0));
+            ctx.closePath();
+            
+            const naturalGrad = ctx.createLinearGradient(0, getY(0.6), 0, getY(0));
+            naturalGrad.addColorStop(0, 'rgba(6, 78, 59, 0.8)');
+            naturalGrad.addColorStop(0.5, 'rgba(5, 150, 105, 0.4)');
+            naturalGrad.addColorStop(1, 'rgba(16, 185, 129, 0.1)');
+            ctx.fillStyle = naturalGrad;
+            ctx.fill();
+            
+            // 4. 绘制补光区域
+            ctx.beginPath();
+            data.forEach((p, i) => {
+                const x = getX(p.hour);
+                const y = getY(p.natural + p.boost);
+                if(i===0) ctx.moveTo(x, y);
+                else {
+                    const prev = data[i-1];
+                    const prevX = getX(prev.hour);
+                    const prevY = getY(prev.natural + prev.boost);
+                    const cpX = (prevX + x) / 2;
+                    ctx.quadraticCurveTo(cpX, prevY, x, y);
+                }
+            });
+            for(let i=data.length-1; i>=0; i--) {
+                ctx.lineTo(getX(data[i].hour), getY(data[i].natural));
+            }
+            ctx.closePath();
+            
+            const boostGrad = ctx.createLinearGradient(0, getY(0.9), 0, getY(0.2));
+            boostGrad.addColorStop(0, 'rgba(52, 211, 153, 0.9)');
+            boostGrad.addColorStop(0.5, 'rgba(16, 185, 129, 0.6)');
+            boostGrad.addColorStop(1, 'rgba(5, 150, 105, 0.2)');
+            ctx.fillStyle = boostGrad;
+            ctx.fill();
+            
+            // 5. 绘制总光照曲线（发光描边）
+            ctx.save();
+            ctx.shadowColor = 'rgba(52, 211, 153, 0.8)';
+            ctx.shadowBlur = 20;
+            ctx.beginPath();
+            ctx.strokeStyle = '#6EE7B7';
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            data.forEach((p, i) => {
+                const x = getX(p.hour);
+                const y = getY(p.total);
+                if(i===0) ctx.moveTo(x, y);
+                else {
+                    const prev = data[i-1];
+                    const prevX = getX(prev.hour);
+                    const prevY = getY(prev.total);
+                    const cpX = (prevX + x) / 2;
+                    ctx.quadraticCurveTo(cpX, prevY, x, y);
+                }
+            });
+            ctx.stroke();
+            ctx.restore();
+            
+            // 6. 绘制当前时间指示器
+            const nowHour = 14.5;
+            const nowX = getX(nowHour);
+            const nowY = getY(data.find(p => Math.abs(p.hour - nowHour) < 0.5)?.total || 0.6);
+            
+            ctx.save();
+            ctx.shadowColor = 'rgba(255,255,255,0.9)';
+            ctx.shadowBlur = 25;
+            ctx.beginPath();
+            ctx.arc(nowX, nowY, 6, 0, Math.PI*2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fill();
+            ctx.restore();
+            
+            ctx.beginPath();
+            ctx.arc(nowX, nowY, 4, 0, Math.PI*2);
+            ctx.fillStyle = '#10B981';
+            ctx.fill();
+            
+            // 垂直指示线
+            const lineGrad = ctx.createLinearGradient(nowX, padding.top, nowX, height-padding.bottom);
+            lineGrad.addColorStop(0, 'rgba(255,255,255,0)');
+            lineGrad.addColorStop(0.3, 'rgba(255,255,255,0.3)');
+            lineGrad.addColorStop(0.5, 'rgba(255,255,255,0.8)');
+            lineGrad.addColorStop(0.7, 'rgba(255,255,255,0.3)');
+            lineGrad.addColorStop(1, 'rgba(255,255,255,0)');
+            ctx.beginPath();
+            ctx.strokeStyle = lineGrad;
+            ctx.lineWidth = 2;
+            ctx.moveTo(nowX, padding.top);
+            ctx.lineTo(nowX, height - padding.bottom);
+            ctx.stroke();
+            
+            // NOW标签
+            const labelY = padding.top - 25;
+            ctx.fillStyle = 'rgba(16, 185, 129, 0.9)';
+            ctx.beginPath();
+            ctx.roundRect(nowX - 25, labelY - 10, 50, 20, 10);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(nowX - 5, labelY + 10);
+            ctx.lineTo(nowX + 5, labelY + 10);
+            ctx.lineTo(nowX, labelY + 15);
+            ctx.closePath();
+            ctx.fill();
+            
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 10px Inter';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('NOW', nowX, labelY);
+            
+            // 7. 坐标轴和标签
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.font = '10px Inter';
+            ctx.textAlign = 'center';
+            [0, 6, 12, 18, 24].forEach(h => {
+                const x = getX(h);
+                ctx.fillText(h + ':00', x, height - 10);
+                ctx.beginPath();
+                ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+                ctx.moveTo(x, height - padding.bottom);
+                ctx.lineTo(x, height - padding.bottom + 5);
+                ctx.stroke();
+            });
+            
+            ctx.textAlign = 'right';
+            ctx.fillStyle = 'rgba(255,255,255,0.5)';
+            [0, 0.3, 0.6, 0.9].forEach((v, i) => {
+                const y = getY(v);
+                const labels = ['0', '200', '400', '600'];
+                ctx.fillText(labels[i], padding.left - 10, y + 3);
+            });
+            
+            ctx.save();
+            ctx.translate(15, height/2);
+            ctx.rotate(-Math.PI/2);
+            ctx.textAlign = 'center';
+            ctx.font = '9px Inter';
+            ctx.fillStyle = 'rgba(255,255,255,0.3)';
+            ctx.fillText('PPFD (μmol·m⁻²·s⁻¹)', 0, 0);
+            ctx.restore();
+        }
+
+        function initChartInteraction() {
+            const canvas = document.getElementById('ppfdCanvasDisplay');
+            const tooltip = document.getElementById('chartTooltip');
+            const container = document.getElementById('chartContainer');
+            
+            if(!canvas || !tooltip) return;
+            
+            canvas.addEventListener('mousemove', function(e) {
+                const rect = canvas.getBoundingClientRect();
+                const x = (e.clientX - rect.left) * window.devicePixelRatio;
+                const width = canvas.width;
+                const padding = {top: 40, bottom: 30, left: 50, right: 20};
+                const chartW = width - padding.left - padding.right;
+                
+                const hour = ((x - padding.left) / chartW) * 24;
+                if(hour >= 0 && hour <= 24) {
+                    const data = generateSmoothCurve();
+                    const point = data.reduce((prev, curr) => 
+                        Math.abs(curr.hour - hour) < Math.abs(prev.hour - hour) ? curr : prev
+                    );
+                    
+                    if(Math.abs(point.hour - hour) < 0.5) {
+                        tooltip.style.display = 'block';
+                        tooltip.style.left = (e.clientX - rect.left + 10) + 'px';
+                        tooltip.style.top = (e.clientY - rect.top - 40) + 'px';
+                        tooltip.innerHTML = `
+                            <div class="font-bold text-green-400">${Math.round(point.hour)}:00</div>
+                            <div class="text-[10px] mt-1">自然光: ${(point.natural * 700).toFixed(0)} μmol</div>
+                            <div class="text-[10px]">补光: ${(point.boost * 700).toFixed(0)} μmol</div>
+                            <div class="text-[10px] text-white/70">总计: ${(point.total * 700).toFixed(0)} μmol</div>
+                        `;
+                    } else {
+                        tooltip.style.display = 'none';
+                    }
+                }
+            });
+            
+            canvas.addEventListener('mouseleave', function() {
+                tooltip.style.display = 'none';
+            });
+        }
+
+        // ==================== AR风格空间热力图 ====================
+        function initHeatmap() {
+            const canvas = document.getElementById('heatmapCanvas');
+            if(!canvas) return;
+            
+            const container = document.getElementById('heatmapContainer');
+            const rect = container.getBoundingClientRect();
+            canvas.width = rect.width * window.devicePixelRatio;
+            canvas.height = rect.height * window.devicePixelRatio;
+            
+            const ctx = canvas.getContext('2d');
+            ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+            
+            drawConcentricHeatmap(currentCenterPPFD);
+            initHeatmapInteraction();
+        }
+
+        // 绘制同心圆等值线热力图（参考图片效果）
+        function drawConcentricHeatmap(centerValue) {
+            const canvas = document.getElementById('heatmapCanvas');
+            if(!canvas) return;
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width / window.devicePixelRatio;
+            const height = canvas.height / window.devicePixelRatio;
+            
+            ctx.clearRect(0, 0, width, height);
+            
+            const centerX = width / 2;
+            const centerY = height / 3; // 光源偏上
+            
+            // 1. 绘制同心圆渐变区域（类似参考图片的3D效果）
+            const zones = [
+                { radius: 0.25, color: [239, 68, 68], label: '400+', alpha: 0.6 },   // 红 - 高值区
+                { radius: 0.4, color: [234, 179, 8], label: '300', alpha: 0.5 },    // 黄 - 良好区
+                { radius: 0.55, color: [34, 197, 94], label: '200', alpha: 0.4 },   // 绿 - 中等区
+                { radius: 0.75, color: [59, 130, 246], label: '100', alpha: 0.3 },  // 蓝 - 边缘区
+                { radius: 1.0, color: [30, 58, 138], label: '0', alpha: 0.2 }       // 深蓝 - 外围
+            ];
+            
+            // 从外向内绘制，实现正确的叠加
+            for(let i = zones.length - 1; i >= 0; i--) {
+                const zone = zones[i];
+                const r = Math.min(width, height) * zone.radius * 0.45;
+                
+                // 径向渐变
+                const grad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, r);
+                const [rC, gC, bC] = zone.color;
+                grad.addColorStop(0, `rgba(${rC}, ${gC}, ${bC}, ${zone.alpha})`);
+                grad.addColorStop(0.7, `rgba(${rC}, ${gC}, ${bC}, ${zone.alpha * 0.6})`);
+                grad.addColorStop(1, `rgba(${rC}, ${gC}, ${bC}, 0)`);
+                
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // 绘制等值线（白色轮廓）
+                ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.arc(centerX, centerY, r * 0.85, 0, Math.PI * 2);
+                ctx.stroke();
+                
+                // 添加数值标签
+                const labelRadius = r * 0.85;
+                ctx.fillStyle = 'rgba(255,255,255,0.8)';
+                ctx.font = 'bold 11px Inter';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                // 在右侧显示标签
+                ctx.fillText(zone.label, centerX + labelRadius + 15, centerY);
+            }
+            
+            // 2. 绘制中心光源发光效果
+            const lightGlow = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 40);
+            lightGlow.addColorStop(0, 'rgba(255,255,255,0.9)');
+            lightGlow.addColorStop(0.3, 'rgba(255,255,200,0.4)');
+            lightGlow.addColorStop(1, 'rgba(255,255,200,0)');
+            ctx.fillStyle = lightGlow;
+            ctx.beginPath();
+            ctx.arc(centerX, centerY, 40, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 3. 绘制网格线（AR风格）
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+            ctx.lineWidth = 0.5;
+            // 垂直网格
+            for(let x = 0; x <= width; x += width/12) {
+                ctx.beginPath();
+                ctx.moveTo(x, 0);
+                ctx.lineTo(x, height);
+                ctx.stroke();
+            }
+            // 水平网格
+            for(let y = 0; y <= height; y += height/8) {
+                ctx.beginPath();
+                ctx.moveTo(0, y);
+                ctx.lineTo(width, y);
+                ctx.stroke();
+            }
+            
+            // 4. 绘制测量线（从光源到边缘的虚线）
+            ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+            ctx.setLineDash([5, 5]);
+            ctx.lineWidth = 1;
+            // 左下
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(width * 0.15, height * 0.85);
+            ctx.stroke();
+            // 右下
+            ctx.beginPath();
+            ctx.moveTo(centerX, centerY);
+            ctx.lineTo(width * 0.85, height * 0.85);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            
+            // 5. 添加数值刻度标记
+            ctx.fillStyle = 'rgba(255,255,255,0.6)';
+            ctx.font = '9px Inter';
+            ctx.textAlign = 'center';
+            ctx.fillText(`${centerValue}`, centerX, centerY - 15);
+            
+            // 6. 添加方向标记
+            ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            ctx.font = '10px Inter';
+            ctx.fillText('N', centerX, 15);
+            ctx.fillText('S', centerX, height - 10);
+            ctx.fillText('W', 10, centerY);
+            ctx.fillText('E', width - 10, centerY);
+        }
+
+        function initHeatmapInteraction() {
+            const container = document.getElementById('heatmapContainer');
+            const canvas = document.getElementById('heatmapCanvas');
+            const tooltip = document.getElementById('heatmapTooltip');
+            
+            container.addEventListener('mousemove', function(e) {
+                const rect = canvas.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                const width = rect.width;
+                const height = rect.height;
+                
+                const centerX = width / 2;
+                const centerY = height / 3;
+                
+                // 计算距离中心的距离
+                const dx = x - centerX;
+                const dy = y - centerY;
+                const dist = Math.sqrt(dx*dx + dy*dy);
+                const maxDist = Math.min(width, height) * 0.45;
+                
+                // 根据距离计算PPFD（线性衰减模型）
+                let intensity = centerValue * (1 - dist/maxDist * 0.8);
+                intensity = Math.max(50, Math.min(centerValue, intensity));
+                
+                // 坐标转换
+                const cmX = ((x - centerX) / width * 60).toFixed(0);
+                const cmY = ((y - centerY) / height * 40).toFixed(0);
+                
+                tooltip.style.display = 'block';
+                tooltip.style.left = (x + 15) + 'px';
+                tooltip.style.top = (y - 10) + 'px';
+                
+                let statusColor = 'text-green-400';
+                let statusText = '✓ 光照充足';
+                if(intensity < 200) {
+                    statusColor = 'text-blue-400';
+                    statusText = '✗ 光照不足';
+                } else if(intensity < 300) {
+                    statusColor = 'text-yellow-400';
+                    statusText = '⚠ 中等偏低';
+                }
+                
+                tooltip.innerHTML = `
+                    <div class="text-gray-400 text-[10px] mb-1">坐标: ${cmX}cm, ${cmY}cm</div>
+                    <div class="text-lg font-bold text-white">${Math.round(intensity)} <span class="text-xs font-normal text-gray-400">μmol/m²s</span></div>
+                    <div class="text-[10px] mt-1 ${statusColor}">${statusText}</div>
+                `;
+            });
+            
+            container.addEventListener('mouseleave', function() {
+                tooltip.style.display = 'none';
+            });
+        }
+
+        function showPlantDetail(name, ppfd) {
+            let suggestion = '';
+            if(name === '散尾葵') {
+                suggestion = '建议向中心移动 8-10cm 以提升 40% 光照';
+            } else if(name === '绿萝') {
+                suggestion = '当前位置适宜，光合效率良好';
+            } else {
+                suggestion = '位于最佳光照区，无需调整';
+            }
+            
+            showToast(`${name}: ${ppfd} μmol/m²s - ${suggestion}`);
+        }
+
+        function updateHeatmap(value) {
+            currentCenterPPFD = parseInt(value);
+            document.getElementById('centerPPFD').textContent = value + ' μmol/m²s';
+            document.getElementById('centerDisplay').textContent = value;
+            drawConcentricHeatmap(currentCenterPPFD);
+            
+            // 更新AR标记颜色（根据新的光强阈值）
+            document.querySelectorAll('.ar-plant-marker').forEach(marker => {
+                const originalPPFD = parseInt(marker.querySelector('.text-lg').textContent);
+                const ratio = value / 480; // 基于原始比例计算新值
+                const newPPFD = Math.round(originalPPFD * ratio);
+                
+                const card = marker.querySelector('.ar-data-card');
+                const valueEl = card.querySelector('.text-lg');
+                const dot = card.querySelector('.w-1\\.5');
+                
+                valueEl.textContent = newPPFD;
+                
+                // 根据新值更新颜色
+                let colorClass = 'text-orange-400';
+                let dotColor = 'bg-orange-500';
+                let bgColor = 'bg-orange-500/30';
+                
+                if(newPPFD < 250) {
+                    colorClass = 'text-blue-400';
+                    dotColor = 'bg-blue-500';
+                    bgColor = 'bg-blue-500/30';
+                } else if(newPPFD < 350) {
+                    colorClass = 'text-yellow-400';
+                    dotColor = 'bg-yellow-500';
+                    bgColor = 'bg-yellow-500/30';
+                } else if(newPPFD < 450) {
+                    colorClass = 'text-green-400';
+                    dotColor = 'bg-green-500';
+                    bgColor = 'bg-green-500/30';
+                }
+                
+                valueEl.className = `text-lg font-bold ${colorClass} leading-none`;
+                dot.className = `w-1.5 h-1.5 rounded-full ${dotColor}`;
+                marker.querySelector('.ar-plant-icon').className = `ar-plant-icon ${bgColor}`;
+            });
+        }
+
+        function applyHeatmapSettings() {
+            showToast('AR光照配置已应用');
+            navigate('plants');
+        }
+
+        function optimizeLayout() {
+            showToast('AR分析中：建议将散尾葵向光源方向移动 8cm');
+            // 高亮显示建议路径
+            setTimeout(() => {
+                showToast('预计可提升 PPFD 至 320 μmol/m²s');
+            }, 1500);
+        }
+
+        function toggleLightPower() {
+            isLightOn = !isLightOn;
+            const btn = document.getElementById('lightPowerBtn');
+            const dot = btn.querySelector('div');
+            if(isLightOn) {
+                btn.classList.remove('bg-gray-600');
+                btn.classList.add('bg-green-600');
+                dot.style.transform = 'translateX(0)';
+                document.getElementById('light-status').textContent = '运行中 · 功率58W';
+                drawConcentricHeatmap(currentCenterPPFD);
+            } else {
+                btn.classList.remove('bg-green-600');
+                btn.classList.add('bg-gray-600');
+                dot.style.transform = 'translateX(-24px)';
+                document.getElementById('light-status').textContent = '已关闭';
+                drawConcentricHeatmap(0);
+            }
+        }
+
+        function updateSpectrum(type, value) {
+            if(type === 'blue') document.getElementById('blueValue').textContent = value + '%';
+            else if(type === 'cct') document.getElementById('cctValue').textContent = value + 'K';
+            else if(type === 'farred') document.getElementById('farRedValue').textContent = value + 'h/夜';
+        }
+
+        function resetApp() {
+            if(confirm('确定重置所有数据？')) {
+                hasPlants = false;
+                startOnboarding();
+            }
+        }
+
+        function showToast(msg) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed top-16 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-full text-xs shadow-lg z-50 border border-white/10';
+            toast.textContent = msg;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 2000);
+        }
+    </script>
+</body>
+</html>
