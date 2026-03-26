@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>AeroGrow Pro - 订阅服务体系</title>
+ <script src="https://cdn.tailwindcss.com"></script>
+ <style>
+ @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+ * { font-family: 'Inter', sans-serif; }
+ 
+ body {
+ background: linear-gradient(180deg, #0f172a 0%, #022c22 100%);
+ color: white;
+ min-height: 100vh;
+ }
+ 
+ .glass {
+ background: rgba(255, 255, 255, 0.08);
+ backdrop-filter: blur(12px);
+ border: 1px solid rgba(255, 255, 255, 0.15);
+ }
+ 
+ .glass-card {
+ background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+ backdrop-filter: blur(20px);
+ border: 1px solid rgba(255,255,255,0.1);
+ }
+ 
+ .tier-seed { border-color: #6b7280; }
+ .tier-sprout { border-color: #10b981; }
+ .tier-bloom { border-color: #f59e0b; }
+ 
+ .feature-item {
+ display: flex;
+ align-items: flex-start;
+ gap: 0.75rem;
+ padding: 0.75rem 0;
+ border-bottom: 1px solid rgba(255,255,255,0.05);
+ }
+ .feature-item:last-child { border-bottom: none; }
+ 
+ .check { color: #10b981; flex-shrink: 0; }
+ .cross { color: #6b7280; flex-shrink: 0; }
+ </style>
+</head>
+<body class="py-12 px-6">
+
+ <div class="max-w-6xl mx-auto">
+ <!-- 标题 -->
+ <div class="text-center mb-12">
+ <div class="w-16 h-16 bg-gradient-to-br from-green-400 to-emerald-600 rounded-2xl mx-auto mb-6 flex items-center justify-center text-3xl shadow-lg">
+ 🌿
+ </div>
+ <h1 class="text-3xl font-bold mb-4">AeroGrow Pro 订阅服务体系</h1>
+ <p class="text-gray-400">从基础控制到 AI 植物医生，找到适合您的层级</p>
+ </div>
+
+ <!-- 三档对比 -->
+ <div class="grid md:grid-cols-3 gap-6">
+ 
+ <!-- Seed 版 -->
+ <div class="glass-card rounded-2xl p-6 tier-seed border-2">
+ <div class="flex justify-between items-start mb-6">
+ <div>
+ <h2 class="text-xl font-bold text-gray-300">🌱 Seed</h2>
+ <p class="text-sm text-gray-400 mt-1">基础控制</p>
+ </div>
+ <span class="px-3 py-1 rounded-full text-xs bg-gray-700 text-gray-300">Free</span>
+ </div>
+ 
+ <div class="space-y-1 mb-6">
+ <div class="feature-item">
+ <span class="check">✓</span>
+ <span>手动亮度调节 (20-100%)</span>
+ </div>
+ <div class="feature-item">
+ <span class="check">✓</span>
+ <span>3 组定时开关设置</span>
+ </div>
+ <div class="feature-item">
+ <span class="check">✓</span>
+ <span>3 种预设光谱模式</span>
+ </div>
+ <div class="feature-item">
+ <span class="check">✓</span>
+ <span>本地数据存储 (7天)</span>
+ </div>
+ <div class="feature-item">
+ <span class="cross">✕</span>
+ <span class="text-gray-500">AI 植物识别</span>
+ </div>
+ <div class="feature-item">
+ <span class="cross">✕</span>
+ <span class="text-gray-500">自动 DLI 补光</span>
+ </div>
+ <div class="feature-item">
+ <span class="cross">✕</span>
+ <span class="text-gray-500">病虫害诊断</span>
+ </div>
+ </div>
+ 
+ <div class="bg-gray-800/50 rounded-lg p-3 text-xs text-gray-400">
+ <strong>策略：</strong>硬件激活默认进入，让用户先感受"有灯可用"，但体验手动调节的麻烦后，自然产生升级意愿。
+ </div>
+ </div>
+
+ <!-- 萌芽版 -->
+ <div class="glass-card rounded-2xl p-6 tier-sprout border-2">
+ <div class="flex justify-between items-start mb-6">
+ <div>
+ <h2 class="text-xl font-bold text-emerald-400">🌿 萌芽版</h2>
+ <p class="text-sm text-gray-400 mt-1">AI 托管，养不死</p>
+ </div>
+ <div class="text-right">
+ <div class="text-2xl font-bold">$4.99<span class="text-sm font-normal text-gray-400">/月</span></div>
+ <div class="text-xs text-gray-500">$49.99/年</div>
+ </div>
+ </div>
+ 
+ <div class="space-y-1 mb-6">
+ <div class="feature-item">
+ <span class="check">✓</span>
+ <span>包含 Seed 全部功能</span>
+ </div>
+ <div class="feature-item">
+ <span class="check">✓</span>
+ <span class="font-semibold text-emerald-400">🤖 DLI 智能闭环（自动补光）</span>
+ </div>
+ <div class="feature-item">
+ <span class="check">✓</span>
+ <span>👁️ AI 识别 800+ 植物品种</span>
+ </div>
+ <div class="feature-item">
+ <span class="check">✓</span>
+ <span>📸 每周自动生长记录</span>
+ </div>
+ <div class="feature-item">
+ <span class="check">✓</span>
+ <span>💧 智能浇水提醒</span>
+ </div>
+ <div class="feature-item">
+ <span class="check">✓</span>
+ <span>☁️ 6 个月云存储</span>
+ </div>
+ <div class="feature-item">
+ <span class="cross">✕</span>
+ <span class="text-gray-500">🏥 AI 病虫害诊断</span>
+ </div>
+ <div class="feature-item">
+ <span class="cross">✕</span>
+ <span class="text-gray-500">🧠 大模型知识问答</span>
+ </div>
+ </div>
+ 
+ <div class="bg-emerald-900/30 rounded-lg p-3 text-xs text-emerald-300">
+ <strong>核心价值：</strong>当用户发现手动调节无法解决"植物总向光弯曲"或"冬天光照不足"时，此档解决核心痛点。
+ </div>
+ </div>
+
+ <!-- Bloom 版 -->
+ <div class="glass-card rounded-2xl p-6 tier-bloom border-2">
+ <div class="flex justify-between items-start mb-6">
+ <div>
+ <h2 class="text-xl font-bold text-amber-400">🌻 Bloom</h2>
+ <p class="text-sm text-gray-400 mt-1">AI 植物医生 + 24h 顾问</p>
+ </div>
+ <div class="text-right">
+ <div class="text-2xl font-bold">$9.99<span class="text-sm font-normal text-gray-400">/月</span></div>
+ <div class="text-xs text-gray-500">$99.99/年</div>
+ </div>
+ </div>
+ 
+ <div class="space-y-1 mb-6">
+ <div class="feature-item">
+ <span class="check">✓</span>
+ <span>包含萌芽版全部功能</span>
+ </div>
+ <div class="feature-item">
+ <span class="check">✓</span>
+ <span class="font-semibold text-amber-400">🏥 AI 病虫害医生</span>
+ <p class="text-xs text-gray-500 mt-1 ml-6">每周自动巡检，识别红蜘蛛/白粉病等</p>
+ </div>
+ <div class="feature-item">
+ <span class="check">✓</span>
+ <span class="font-semibold text-amber-400">🧠 大模型知识问答</span>
+ <p class="text-xs text-gray-500 mt-1 ml-6">24h 在线植物专家，拍照即诊断</p>
+ </div>
+ <div class="feature-item">
+ <span class="check">✓</span>
+ <span>🧪 全光谱实验室（自定义光配方）</span>
+ </div>
+ <div class="feature-item">
+ <span class="check">✓</span>
+ <span>📊 生长瓶颈智能分析</span>
+ </div>
+ <div class="feature-item">
+ <span class="check">✓</span>
+ <span>💾 永久云存储 + 家庭共享</span>
+ </div>
+ </div>
+ 
+ <div class="bg-amber-900/30 rounded-lg p-3 text-xs text-amber-300">
+ <strong>核心逻辑：</strong>面向植物发烧友，AI 医生 + 知识专家提供专业级养护。
+ </div>
+ </div>
+ 
+ </div>
+
+ <!-- 产品策略 -->
+ <div class="mt-12 glass rounded-2xl p-8">
+ <h2 class="text-xl font-bold mb-6">💡 产品策略</h2>
+ 
+ <div class="grid md:grid-cols-2 gap-8">
+ <div>
+ <h3 class="font-semibold text-lg mb-4 text-green-400">定价与转化</h3>
+ <ul class="space-y-3 text-sm text-gray-300">
+ <li>• <strong>硬件捆绑：</strong>购机赠送 3 个月萌芽版，到期降回 Seed，体验落差促付费</li>
+ <li>• <strong>Seed 限制设计：</strong>手动输入数值 vs 一键"自动模式"，形成对比</li>
+ <li>• <strong>Bloom 差异化：</strong>AI 医生 + 专家问答吸引高端用户</li>
+ <li>• <strong>年付折扣：</strong>约17%优惠，强调"陪伴植物度过完整四季"</li>
+ </ul>
+ </div>
+ 
+ <div>
+ <h3 class="font-semibold text-lg mb-4 text-blue-400">核心卖点</h3>
+ <ul class="space-y-3 text-sm text-gray-300">
+ <li>• <strong>萌芽版：</strong>DLI 智能闭环是护城河 - 设置后无需操心</li>
+ <li>• <strong>Bloom：</strong>AI 病虫害医生在问题扩散前预警</li>
+ <li>• <strong>Bloom：</strong>LLM 专家即时解答任何植物问题</li>
+ </ul>
+ </div>
+ </div>
+ </div>
+
+ <!-- 建议优先开发 -->
+ <div class="mt-8 glass rounded-2xl p-6 border border-green-500/30">
+ <div class="flex items-center gap-3 mb-4">
+ <span class="text-2xl">🚀</span>
+ <h3 class="font-bold text-lg">开发优先级</h3>
+ </div>
+ <p class="text-sm text-gray-300 leading-relaxed">
+ 萌芽版的 <span class="text-emerald-400 font-semibold">DLI 智能闭环</span> 是核心护城河，Bloom 版的 <span class="text-amber-400 font-semibold">AI 病虫害医生</span> 和 <span class="text-amber-400 font-semibold">LLM 专家</span> 是付费升级的关键卖点，其他功能可后续迭代。
+ </p>
+ </div>
+
+ </div>
+
+</body>
+</html>

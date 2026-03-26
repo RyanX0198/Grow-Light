@@ -1,0 +1,585 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>AeroGrow Pro - 光控算法验证实验台</title>
+ <script src="https://cdn.tailwindcss.com"></script>
+ <style>
+ @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+ 
+ * { font-family: 'Inter', sans-serif; }
+ .mono { font-family: 'JetBrains Mono', monospace; }
+ 
+ body {
+ background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+ color: white;
+ overflow: hidden;
+ }
+ 
+ .glass {
+ background: rgba(255, 255, 255, 0.05);
+ backdrop-filter: blur(10px);
+ border: 1px solid rgba(255, 255, 255, 0.1);
+ }
+ 
+ .control-slider {
+ -webkit-appearance: none;
+ width: 100%;
+ height: 6px;
+ border-radius: 3px;
+ background: rgba(255,255,255,0.1);
+ outline: none;
+ }
+ 
+ .control-slider::-webkit-slider-thumb {
+ -webkit-appearance: none;
+ appearance: none;
+ width: 18px;
+ height: 18px;
+ border-radius: 50%;
+ background: #10b981;
+ cursor: pointer;
+ box-shadow: 0 0 10px rgba(16, 185, 129, 0.5);
+ }
+ 
+ .beam { pointer-events: none; mix-blend-mode: screen; }
+ 
+ .test-point {
+ cursor: pointer;
+ transition: opacity 0.3s ease, filter 0.3s ease;
+ }
+ 
+ .test-point:hover { opacity: 1 !important; filter: drop-shadow(0 0 12px currentColor) brightness(1.3); }
+ .test-point.active { opacity: 1 !important; filter: drop-shadow(0 0 16px #10b981) brightness(1.2); }
+ .test-point:hover rect { stroke-width: 2; stroke-opacity: 1; }
+ 
+ @keyframes pulse-ring {
+ 0% { transform: scale(0.8); opacity: 0.8; }
+ 100% { transform: scale(1.3); opacity: 0; }
+ }
+ .pulse-circle { animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite; }
+ 
+ .grid-bg {
+ background-image: 
+ linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+ linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+ background-size: 20px 20px;
+ }
+
+ .formula-box {
+ background: linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+ border: 1px solid rgba(16, 185, 129, 0.3);
+ }
+
+ .connection-line {
+ display: none;
+ }
+ .connection-line.visible {
+ display: block;
+ }
+ </style>
+</head>
+<body class="h-screen flex flex-col">
+
+ <!-- 顶部标题栏 -->
+ <div class="h-14 glass flex items-center justify-between px-6 z-20">
+ <div class="flex items-center gap-3">
+ <div class="w-8 h-8 bg-gradient-to-br from-green-400 to-blue-500 rounded-lg flex items-center justify-center font-bold text-sm">🧪</div>
+ <div>
+ <h1 class="font-bold text-sm">AeroGrow 实验验证台</h1>
+ <div class="text-xs text-gray-400">光控算法模拟 v3.1</div>
+ </div>
+ </div>
+ </div>
+
+ <!-- 主内容区 -->
+ <div class="flex-1 flex overflow-hidden">
+ 
+ <!-- 左侧：可视化实验区 -->
+ <div class="flex-1 relative grid-bg overflow-hidden">
+ 
+ <!-- 左上角：核心计算公式面板 -->
+ <div class="absolute top-4 left-4 formula-box rounded-xl p-4 z-10 max-w-xs">
+ <div class="text-xs text-green-400 font-semibold mb-2 flex items-center gap-2">
+ <span class="w-1.5 h-1.5 bg-green-500 rounded-full"></span>
+ 核心计算公式
+ </div>
+ <div class="text-sm font-bold mb-3 mono bg-black/30 p-2 rounded">
+ PPFD = 600 × B% × (30/d)²
+ </div>
+ <div class="space-y-1.5 text-[11px] text-gray-300">
+ <div class="flex justify-between">
+ <span class="text-gray-500">PPFD_ref</span>
+ <span class="mono text-yellow-400">600 μmol</span>
+ </div>
+ <div class="flex justify-between">
+ <span class="text-gray-500">B% (亮度)</span>
+ <span class="mono text-yellow-400" id="formula-brightness">50%</span>
+ </div>
+ <div class="flex justify-between">
+ <span class="text-gray-500">d (距离)</span>
+ <span class="mono text-blue-400" id="formula-distance">- cm</span>
+ </div>
+ <div class="h-px bg-white/10 my-1"></div>
+ <div class="flex justify-between font-semibold">
+ <span class="text-gray-400">计算结果</span>
+ <span class="mono text-green-400" id="formula-result">-</span>
+ </div>
+ </div>
+ </div>
+
+ <!-- 左下角：操作说明 -->
+ <div class="absolute bottom-4 left-4 glass rounded-lg p-3 text-xs max-w-sm z-10">
+ <div class="font-semibold mb-2 text-green-400">💡 操作流程</div>
+ <div class="text-gray-300 space-y-1 leading-relaxed">
+ <div>1. 点击 <span class="text-green-400 font-bold">A</span>、<span class="text-yellow-400 font-bold">B</span> 或 <span class="text-red-400 font-bold">C</span> 选择待测植物</div>
+ <div>2. 选中植物自动进入<span class="text-white">照射区域</span>（灯光正下方）</div>
+ <div>3. 切换选择时，当前植物自动<span class="text-gray-400">归位</span>，新植物进入</div>
+ <div>4. 观察左上角公式中的 <span class="text-blue-400">d</span> 和计算结果变化</div>
+ </div>
+ </div>
+
+ <!-- 提示：空照射区 -->
+ <div id="empty-hint" class="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 text-center pointer-events-none z-0">
+ <div class="text-gray-600 text-lg font-light mb-2">照射区域</div>
+ <div class="text-gray-700 text-sm">请点击左侧或右侧植物进行选择</div>
+ </div>
+
+ <!-- SVG 场景 -->
+ <svg class="w-full h-full absolute inset-0" viewBox="0 0 800 600" preserveAspectRatio="xMidYMid meet">
+ <defs>
+ <radialGradient id="lightGradient" cx="0.5" cy="0" r="1">
+ <stop offset="0%" stop-color="rgba(255, 255, 200, 0.9)" />
+ <stop offset="30%" stop-color="rgba(255, 255, 150, 0.4)" />
+ <stop offset="100%" stop-color="rgba(255, 255, 100, 0)" />
+ </radialGradient>
+ <linearGradient id="ultrasoundGradient" x1="0.5" y1="0" x2="0.5" y2="1">
+ <stop offset="0%" stop-color="rgba(59, 130, 246, 0.8)" />
+ <stop offset="100%" stop-color="rgba(59, 130, 246, 0)" />
+ </linearGradient>
+ <radialGradient id="ambLightGradient" cx="0" cy="0.5" r="1">
+ <stop offset="0%" stop-color="rgba(255, 255, 255, 0.2)" />
+ <stop offset="100%" stop-color="rgba(255, 255, 255, 0)" />
+ </radialGradient>
+ <radialGradient id="warningGradient" cx="0.5" cy="0.5" r="0.5">
+ <stop offset="0%" stop-color="rgba(239, 68, 68, 0.6)" />
+ <stop offset="100%" stop-color="rgba(239, 68, 68, 0)" />
+ </radialGradient>
+ </defs>
+
+ <!-- 环境光（左侧） -->
+ <g transform="translate(0, 300)">
+ <path d="M 0,0 L 150,-100 L 150,100 Z" fill="url(#ambLightGradient)" opacity="0.3" />
+ <text x="80" y="0" fill="rgba(255,255,255,0.5)" font-size="11" transform="rotate(-33, 80, 0)">环境光</text>
+ </g>
+
+ <!-- LED 灯组（固定在顶部中心） -->
+ <g id="led-assembly" transform="translate(400, 100)">
+ <rect x="-60" y="-20" width="120" height="40" rx="5" fill="#334155" stroke="#475569" stroke-width="2" />
+ <rect x="-60" y="-15" width="120" height="30" fill="#1e293b" />
+ 
+ <circle cx="-40" cy="0" r="8" fill="#fbbf24" opacity="0.3" id="led1" />
+ <circle cx="-20" cy="0" r="8" fill="#fbbf24" opacity="0.3" id="led2" />
+ <circle cx="0" cy="0" r="8" fill="#fbbf24" opacity="0.3" id="led3" />
+ <circle cx="20" cy="0" r="8" fill="#fbbf24" opacity="0.3" id="led4" />
+ <circle cx="40" cy="0" r="8" fill="#fbbf24" opacity="0.3" id="led5" />
+ 
+ <circle cx="0" cy="0" r="12" fill="#3b82f6" stroke="#60a5fa" stroke-width="2" />
+ <text x="0" y="4" text-anchor="middle" fill="white" font-size="8" font-weight="bold">US</text>
+ 
+ <line x1="70" y1="0" x2="120" y2="0" stroke="#10b981" stroke-width="1" stroke-dasharray="4,2" />
+ <text x="125" y="4" fill="#10b981" font-size="11" font-family="monospace" id="height-display">H=60cm</text>
+ 
+ <path id="light-cone" d="M -60,0 L -180,400 L 180,400 L 60,0 Z" fill="url(#lightGradient)" opacity="0.5" class="beam" />
+ 
+ <path id="us-beam" d="M 0,0 L -26,200 L 26,200 Z" fill="url(#ultrasoundGradient)" opacity="0.5" class="beam" />
+ <circle cx="0" cy="0" r="15" fill="none" stroke="#3b82f6" stroke-width="2" class="pulse-circle" />
+ </g>
+
+ <!-- 地面/桌面 -->
+ <line x1="50" y1="500" x2="750" y2="500" stroke="#64748b" stroke-width="3" />
+ 
+ <!-- 照射区域标记（中心） -->
+ <rect x="350" y="480" width="100" height="20" fill="none" stroke="#10b981" stroke-width="2" stroke-dasharray="5,5" opacity="0.5" />
+ <text x="400" y="475" text-anchor="middle" fill="#10b981" font-size="10" opacity="0.7">照射区域</text>
+
+ <!-- 待命区域标记 -->
+ <text x="200" y="525" text-anchor="middle" fill="#475569" font-size="10">待命区 A</text>
+ <text x="650" y="525" text-anchor="middle" fill="#475569" font-size="10">待命区 B/C</text>
+
+ <line id="measuring-line" class="connection-line" x1="400" y1="100" x2="400" y2="480" stroke="#3b82f6" stroke-width="2" stroke-dasharray="5,5" opacity="0.8" />
+ <text id="distance-label" class="connection-line" x="410" y="300" fill="#3b82f6" font-size="13" font-family="monospace" font-weight="bold">d=40cm</text>
+
+ <line id="actual-distance-line" class="connection-line" x1="380" y1="100" x2="380" y2="480" stroke="#10b981" stroke-width="3" opacity="0.8" />
+ <text id="actual-distance-text" class="connection-line" x="375" y="290" fill="#10b981" font-size="11" font-family="monospace" text-anchor="end">40cm</text>
+
+ <circle id="warning-zone" cx="400" cy="400" r="40" fill="url(#warningGradient)" opacity="0" />
+
+ <g id="point-a" class="test-point" onclick="selectPoint('A')" transform="translate(250, 500)">
+ <rect x="-20" y="-80" width="40" height="80" fill="rgba(16, 185, 129, 0.15)" stroke="#10b981" stroke-width="1.5" rx="3" />
+ <circle cx="0" cy="-80" r="6" fill="#10b981" />
+ <text x="0" y="-90" text-anchor="middle" fill="#10b981" font-size="11" font-weight="bold">A</text>
+ <text x="0" y="15" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="9">20cm</text>
+ </g>
+
+ <g id="point-b" class="test-point" onclick="selectPoint('B')" transform="translate(600, 500)">
+ <rect x="-15" y="-200" width="30" height="200" fill="rgba(245, 158, 11, 0.15)" stroke="#f59e0b" stroke-width="1.5" rx="3" />
+ <circle cx="0" cy="-200" r="6" fill="#f59e0b" />
+ <text x="0" y="-210" text-anchor="middle" fill="#f59e0b" font-size="11" font-weight="bold">B</text>
+ <text x="0" y="15" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="9">50cm</text>
+ </g>
+
+ <g id="point-c" class="test-point" onclick="selectPoint('C')" transform="translate(700, 500)">
+ <rect x="-15" y="-80" width="30" height="80" fill="rgba(239, 68, 68, 0.15)" stroke="#ef4444" stroke-width="1.5" rx="3" />
+ <circle cx="0" cy="-80" r="6" fill="#ef4444" />
+ <text x="0" y="-90" text-anchor="middle" fill="#ef4444" font-size="11" font-weight="bold">C</text>
+ <text x="0" y="15" text-anchor="middle" fill="rgba(255,255,255,0.5)" font-size="9">20cm</text>
+ </g>
+
+ </svg>
+ </div>
+
+ <!-- 右侧面板：控制与数据 -->
+ <div class="w-80 glass border-l border-white/10 flex flex-col">
+ 
+ <div class="p-5 border-b border-white/10 space-y-5">
+ <h2 class="font-bold text-sm flex items-center gap-2">
+ <span class="w-1 h-4 bg-green-500 rounded-full"></span>
+ 实验参数控制
+ </h2>
+
+ <div>
+ <div class="flex justify-between text-xs mb-2">
+ <span class="text-gray-400">LED 悬挂高度 (H)</span>
+ <span class="mono text-green-400" id="val-height">60cm</span>
+ </div>
+ <input type="range" min="30" max="100" value="60" class="control-slider" id="slider-height" oninput="updateParams()">
+ </div>
+
+ <div>
+ <div class="flex justify-between text-xs mb-2">
+ <span class="text-gray-400">LED 功率输出</span>
+ <span class="mono text-yellow-400" id="val-brightness">50%</span>
+ </div>
+ <input type="range" min="0" max="100" value="50" class="control-slider" id="slider-brightness" oninput="updateParams()">
+ </div>
+
+ <div>
+ <div class="flex justify-between text-xs mb-2">
+ <span class="text-gray-400">环境光 PPFD</span>
+ <span class="mono text-blue-400" id="val-ambient">100 μmol</span>
+ </div>
+ <input type="range" min="0" max="500" value="100" class="control-slider" id="slider-ambient" oninput="updateParams()">
+ </div>
+ </div>
+
+ <div class="flex-1 p-5 space-y-4 overflow-y-auto">
+ <h2 class="font-bold text-sm flex items-center gap-2">
+ <span class="w-1 h-4 bg-blue-500 rounded-full"></span>
+ 实时监测数据
+ </h2>
+
+ <div class="glass rounded-lg p-3 border border-white/10" id="status-card" style="opacity: 0.5;">
+ <div class="flex items-center justify-between mb-3">
+ <div class="flex items-center gap-2">
+ <span class="text-2xl font-bold text-white" id="selected-point">-</span>
+ <span class="text-xs text-gray-400" id="point-name">未选择</span>
+ </div>
+ <div class="text-right">
+ <div class="text-xs text-gray-400">植物高度</div>
+ <div class="mono text-sm font-bold" id="plant-height">-</div>
+ </div>
+ </div>
+ 
+ <div class="space-y-2 text-xs bg-black/20 rounded p-2">
+ <div class="flex justify-between py-1 border-b border-white/5">
+ <span class="text-gray-400">灯高 H</span>
+ <span class="mono text-green-400" id="disp-height">60cm</span>
+ </div>
+ <div class="flex justify-between py-1 border-b border-white/5">
+ <span class="text-gray-400">植物高 h</span>
+ <span class="mono text-orange-400" id="disp-plant-h">-</span>
+ </div>
+ <div class="flex justify-between py-1 bg-blue-900/30 rounded px-2 -mx-2">
+ <span class="text-blue-300 font-semibold">距离 d=H-h</span>
+ <span class="mono text-blue-300 font-bold" id="actual-distance">-</span>
+ </div>
+ </div>
+ </div>
+
+ <div class="glass rounded-lg p-3 border border-white/10">
+ <div class="text-xs text-gray-400 mb-3">PPFD 光强计算</div>
+ 
+ <div class="space-y-3">
+ <div class="flex justify-between items-center">
+ <span class="text-yellow-400 text-xs">LED 贡献</span>
+ <span class="mono font-bold" id="ppfd-led">0 μmol</span>
+ </div>
+ <div class="flex justify-between items-center">
+ <span class="text-blue-400 text-xs">环境光</span>
+ <span class="mono font-bold" id="ppfd-amb">100 μmol</span>
+ </div>
+ <div class="pt-2 border-t border-white/10 flex justify-between items-center">
+ <span class="text-white font-semibold text-sm">总 PPFD</span>
+ <div class="text-right">
+ <span class="mono font-bold text-2xl text-green-400" id="ppfd-total">-</span>
+ <span class="text-xs text-gray-500 block">μmol·m⁻²·s⁻¹</span>
+ </div>
+ </div>
+ </div>
+ 
+ <div id="ppfd-status" class="mt-3 text-xs px-2 py-1 rounded bg-gray-700/50 text-gray-400 inline-block w-full text-center">
+ 请选择植物进行测量
+ </div>
+ </div>
+
+ <div class="glass rounded-lg p-3 border border-yellow-500/30 bg-yellow-500/5">
+ <div class="text-xs text-yellow-400 font-semibold mb-2">📐 距离反平方定律演示</div>
+ <div class="text-[11px] text-gray-300 leading-relaxed space-y-1">
+ <div>相同亮度下，距离越近 PPFD 越强：</div>
+ <div class="font-mono text-[10px] mt-1 space-y-0.5">
+ <div>A点 (40cm): <span class="text-green-400">168 μmol</span></div>
+ <div>B点 (10cm): <span class="text-red-400 font-bold">2700 μmol</span> (16倍)</div>
+ </div>
+ </div>
+ </div>
+
+ <div id="burn-warning" class="glass rounded-lg p-3 border border-red-500/30 bg-red-500/5 hidden">
+ <div class="text-xs text-red-400 font-semibold mb-1">⚠️ 光抑制风险!</div>
+ <div class="text-xs text-gray-300">PPFD > 1500，建议降低亮度或提高灯高</div>
+ </div>
+ </div>
+
+ <div class="p-4 border-t border-white/10">
+ <button onclick="resetExperiment()" class="w-full py-2.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-sm font-medium transition-colors">
+ 重置实验
+ </button>
+ </div>
+ </div>
+ </div>
+
+ <script>
+ const params = { height: 60, brightness: 50, ambient: 100 };
+ const centerX = 400;
+ 
+ const points = {
+ 'A': { standbyX: 250, currentX: 250, h: 20, color: '#10b981', name: '矮株 A (20cm)' },
+ 'B': { standbyX: 600, currentX: 600, h: 50, color: '#f59e0b', name: '高株 B (50cm)' },
+ 'C': { standbyX: 700, currentX: 700, h: 20, color: '#ef4444', name: '矮株 C (20cm)' }
+ };
+ 
+ let activePoint = null;
+ const REF_PPFD = 600;
+
+ function updateParams() {
+ params.height = parseInt(document.getElementById('slider-height').value);
+ params.brightness = parseInt(document.getElementById('slider-brightness').value);
+ params.ambient = parseInt(document.getElementById('slider-ambient').value);
+ 
+ document.getElementById('val-height').textContent = params.height + 'cm';
+ document.getElementById('val-brightness').textContent = params.brightness + '%';
+ document.getElementById('val-ambient').textContent = params.ambient + ' μmol';
+ 
+ updateVisualization();
+ if(activePoint) calculatePPFD();
+ }
+
+ function updateVisualization() {
+ const ledY = 500 - params.height * 4;
+ 
+ const ledAssembly = document.getElementById('led-assembly');
+ ledAssembly.setAttribute('transform', `translate(400, ${ledY})`);
+ document.getElementById('height-display').textContent = `H=${params.height}cm`;
+ 
+ const spread = params.height * 1.2;
+ const conePath = `M -60,0 L -${spread},${500-ledY} L ${spread},${500-ledY} L 60,0 Z`;
+ document.getElementById('light-cone').setAttribute('d', conePath);
+ document.getElementById('light-cone').setAttribute('opacity', 0.2 + (params.brightness/100)*0.6);
+ 
+ for(let i=1; i<=5; i++) {
+ document.getElementById('led'+i).setAttribute('opacity', 0.3 + (params.brightness/100)*0.7);
+ }
+ 
+ const usLength = params.height * 4;
+ const usSpread = usLength * Math.tan(15 * Math.PI / 180);
+ document.getElementById('us-beam').setAttribute('d', `M 0,0 L -${usSpread},${usLength} L ${usSpread},${usLength} Z`);
+ 
+ ['A','B','C'].forEach(key => {
+ const pt = points[key];
+ const g = document.getElementById('point-'+key.toLowerCase());
+ g.setAttribute('transform', `translate(${pt.currentX}, 500)`);
+ 
+ if(key === activePoint) {
+ g.classList.add('active');
+ g.style.opacity = '1';
+ } else {
+ g.classList.remove('active');
+ g.style.opacity = '0.6';
+ }
+ });
+ 
+ const line = document.getElementById('measuring-line');
+ const label = document.getElementById('distance-label');
+ const actualLine = document.getElementById('actual-distance-line');
+ const actualText = document.getElementById('actual-distance-text');
+ 
+ if(activePoint) {
+ const pt = points[activePoint];
+ const targetY = 500 - pt.h * 4;
+ 
+ if(!isNaN(ledY) && !isNaN(targetY)) {
+ line.setAttribute('x1', centerX);
+ line.setAttribute('y1', ledY);
+ line.setAttribute('x2', centerX);
+ line.setAttribute('y2', targetY);
+ line.classList.add('visible');
+ 
+ label.setAttribute('x', centerX + 15);
+ label.setAttribute('y', (ledY + targetY) / 2);
+ label.classList.add('visible');
+ label.textContent = `d=${params.height - pt.h}cm`;
+ 
+ actualLine.setAttribute('x1', 380);
+ actualLine.setAttribute('y1', ledY);
+ actualLine.setAttribute('x2', 380);
+ actualLine.setAttribute('y2', targetY);
+ actualLine.classList.add('visible');
+ 
+ actualText.setAttribute('x', 375);
+ actualText.setAttribute('y', (ledY + targetY) / 2);
+ actualText.classList.add('visible');
+ actualText.textContent = `${params.height - pt.h}cm`;
+ }
+ } else {
+ line.classList.remove('visible');
+ label.classList.remove('visible');
+ actualLine.classList.remove('visible');
+ actualText.classList.remove('visible');
+ }
+ }
+
+ function animatePoint(pointKey, targetX) {
+ const pt = points[pointKey];
+ const startX = pt.currentX;
+ const startTime = performance.now();
+ const duration = 600;
+ 
+ function step(currentTime) {
+ const elapsed = currentTime - startTime;
+ const progress = Math.min(elapsed / duration, 1);
+ const ease = 1 - Math.pow(1 - progress, 3);
+ 
+ pt.currentX = startX + (targetX - startX) * ease;
+ updateVisualization();
+ 
+ if(progress < 1) requestAnimationFrame(step);
+ }
+ requestAnimationFrame(step);
+ }
+
+ function selectPoint(pointKey) {
+ if(activePoint === pointKey) return;
+ 
+ if(activePoint) {
+ animatePoint(activePoint, points[activePoint].standbyX);
+ }
+ 
+ animatePoint(pointKey, centerX);
+ activePoint = pointKey;
+ 
+ document.getElementById('empty-hint').style.display = 'none';
+ document.getElementById('status-card').style.opacity = '1';
+ 
+ const pt = points[pointKey];
+ document.getElementById('selected-point').textContent = pointKey;
+ document.getElementById('selected-point').style.color = pt.color;
+ document.getElementById('point-name').textContent = pt.name;
+ document.getElementById('plant-height').textContent = pt.h + 'cm';
+ 
+ calculatePPFD();
+ }
+
+ function calculatePPFD() {
+ if(!activePoint) return;
+ 
+ const pt = points[activePoint];
+ const d = params.height - pt.h;
+ 
+ let ppfdLed = 0;
+ if(d > 0) {
+ ppfdLed = REF_PPFD * (params.brightness / 100) * Math.pow(30 / d, 2);
+ }
+ ppfdLed = Math.min(ppfdLed, 9999);
+ const total = ppfdLed + params.ambient;
+ 
+ document.getElementById('formula-brightness').textContent = params.brightness + '%';
+ document.getElementById('formula-distance').textContent = d + ' cm';
+ document.getElementById('formula-result').textContent = Math.round(ppfdLed) + ' μmol';
+ 
+ document.getElementById('disp-height').textContent = params.height + 'cm';
+ document.getElementById('disp-plant-h').textContent = pt.h + 'cm';
+ document.getElementById('actual-distance').textContent = d + 'cm';
+ 
+ document.getElementById('ppfd-led').textContent = Math.round(ppfdLed) + ' μmol';
+ document.getElementById('ppfd-amb').textContent = params.ambient + ' μmol';
+ document.getElementById('ppfd-total').textContent = Math.round(total);
+ 
+ const statusEl = document.getElementById('ppfd-status');
+ const warningEl = document.getElementById('burn-warning');
+ const warningZone = document.getElementById('warning-zone');
+ 
+ if(total < 100) {
+ statusEl.className = 'mt-3 text-xs px-2 py-1 rounded bg-blue-500/20 text-blue-400 inline-block w-full text-center';
+ statusEl.textContent = '⚠ 光照不足';
+ warningEl.classList.add('hidden');
+ warningZone.setAttribute('opacity', '0');
+ } else if(total > 1500) {
+ statusEl.className = 'mt-3 text-xs px-2 py-1 rounded bg-red-500/20 text-red-400 inline-block w-full text-center';
+ statusEl.textContent = '⚠ 光抑制风险';
+ warningEl.classList.remove('hidden');
+ warningZone.setAttribute('opacity', '0.6');
+ } else {
+ statusEl.className = 'mt-3 text-xs px-2 py-1 rounded bg-green-500/20 text-green-400 inline-block w-full text-center';
+ statusEl.textContent = '✓ 光照适宜';
+ warningEl.classList.add('hidden');
+ warningZone.setAttribute('opacity', '0');
+ }
+ }
+
+ function resetExperiment() {
+ if(activePoint) {
+ animatePoint(activePoint, points[activePoint].standbyX);
+ activePoint = null;
+ }
+ 
+ document.getElementById('slider-height').value = 60;
+ document.getElementById('slider-brightness').value = 50;
+ document.getElementById('slider-ambient').value = 100;
+ updateParams();
+ 
+ document.getElementById('empty-hint').style.display = 'block';
+ document.getElementById('status-card').style.opacity = '0.5';
+ document.getElementById('selected-point').textContent = '-';
+ document.getElementById('point-name').textContent = '未选择';
+ document.getElementById('plant-height').textContent = '-';
+ document.getElementById('ppfd-total').textContent = '-';
+ document.getElementById('ppfd-status').textContent = '请选择植物进行测量';
+ document.getElementById('ppfd-status').className = 'mt-3 text-xs px-2 py-1 rounded bg-gray-700/50 text-gray-400 inline-block w-full text-center';
+ document.getElementById('formula-result').textContent = '-';
+ document.getElementById('formula-distance').textContent = '- cm';
+ 
+ document.getElementById('measuring-line').classList.remove('visible');
+ document.getElementById('distance-label').classList.remove('visible');
+ document.getElementById('actual-distance-line').classList.remove('visible');
+ document.getElementById('actual-distance-text').classList.remove('visible');
+ }
+
+ updateVisualization();
+ document.getElementById('measuring-line').classList.remove('visible');
+ document.getElementById('distance-label').classList.remove('visible');
+ document.getElementById('actual-distance-line').classList.remove('visible');
+ document.getElementById('actual-distance-text').classList.remove('visible');
+ </script>
+</body>
+</html>

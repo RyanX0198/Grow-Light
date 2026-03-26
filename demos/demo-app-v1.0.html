@@ -1,0 +1,1778 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+ <title>AeroGrow Pro - 智慧植物养护</title>
+ <script src="https://cdn.tailwindcss.com"></script>
+ <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+ <style>
+ * { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+ 
+ body {
+ background: #0f172a;
+ background-image: linear-gradient(180deg, #0f172a 0%, #022c22 100%);
+ color: white;
+ min-height: 100vh;
+ }
+ 
+ .glass {
+ background: rgba(255, 255, 255, 0.08);
+ backdrop-filter: blur(12px);
+ border: 1px solid rgba(255, 255, 255, 0.15);
+ }
+ 
+ .glass-card {
+ background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%);
+ backdrop-filter: blur(20px);
+ border: 1px solid rgba(255,255,255,0.1);
+ }
+ 
+ input[type=range] {
+ -webkit-appearance: none;
+ background: transparent;
+ }
+ input[type=range]::-webkit-slider-thumb {
+ -webkit-appearance: none;
+ height: 20px;
+ width: 20px;
+ border-radius: 50%;
+ background: #10B981;
+ cursor: pointer;
+ margin-top: -8px;
+ box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+ }
+ input[type=range]::-webkit-slider-runnable-track {
+ width: 100%;
+ height: 4px;
+ cursor: pointer;
+ background: rgba(255,255,255,0.2);
+ border-radius: 2px;
+ }
+ 
+ .no-scrollbar::-webkit-scrollbar { display: none; }
+ 
+ .page { display: none; animation: fadeIn 0.3s; }
+ .page.active { display: block; }
+ @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+ 
+ .scanning-radar {
+ background: conic-gradient(from 0deg, transparent, rgba(16, 185, 129, 0.4), transparent);
+ animation: radar 2s linear infinite;
+ }
+ @keyframes radar { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+ .adapt-good { background: rgba(16, 185, 129, 0.2); color: #34D399; border: 1px solid rgba(16, 185, 129, 0.3); }
+ .adapt-warning { background: rgba(245, 158, 11, 0.2); color: #FBBF24; border: 1px solid rgba(245, 158, 11, 0.3); }
+ 
+ .chart-tooltip {
+ position: absolute;
+ background: rgba(0,0,0,0.9);
+ border: 1px solid rgba(16,185,129,0.5);
+ border-radius: 8px;
+ padding: 8px 12px;
+ pointer-events: none;
+ font-size: 11px;
+ color: white;
+ box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+ display: none;
+ z-index: 100;
+ }
+
+ .ar-plant-marker {
+ position: absolute;
+ transform: translate(-50%, -50%);
+ z-index: 20;
+ animation: float 3s ease-in-out infinite;
+ }
+ 
+ @keyframes float {
+ 0%, 100% { transform: translate(-50%, -50%) translateY(0px); }
+ 50% { transform: translate(-50%, -50%) translateY(-3px); }
+ }
+ 
+ .ar-plant-icon {
+ width: 36px;
+ height: 36px;
+ border-radius: 50%;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ font-size: 18px;
+ border: 2px solid rgba(255,255,255,0.8);
+ box-shadow: 0 0 0 2px rgba(16,185,129,0.6), 0 4px 12px rgba(0,0,0,0.4);
+ position: relative;
+ z-index: 2;
+ }
+ 
+ .ar-plant-icon::before {
+ content: '';
+ position: absolute;
+ inset: -4px;
+ border-radius: 50%;
+ border: 1px solid rgba(16,185,129,0.4);
+ animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
+ }
+ 
+ @keyframes pulse-ring {
+ 0% { transform: scale(0.8); opacity: 0.8; }
+ 100% { transform: scale(1.3); opacity: 0; }
+ }
+ 
+ .ar-data-card {
+ position: absolute;
+ top: -45px;
+ left: 50%;
+ transform: translateX(-50%);
+ background: rgba(0,0,0,0.85);
+ border: 1px solid rgba(255,255,255,0.2);
+ border-radius: 8px;
+ padding: 6px 10px;
+ white-space: nowrap;
+ font-size: 10px;
+ backdrop-filter: blur(8px);
+ box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+ }
+ 
+ .ar-data-card::after {
+ content: '';
+ position: absolute;
+ bottom: -5px;
+ left: 50%;
+ transform: translateX(-50%);
+ width: 0;
+ height: 0;
+ border-left: 5px solid transparent;
+ border-right: 5px solid transparent;
+ border-top: 5px solid rgba(0,0,0,0.85);
+ }
+
+ .heatmap-tooltip {
+ position: absolute;
+ background: rgba(0,0,0,0.9);
+ border: 1px solid rgba(16,185,129,0.5);
+ border-radius: 8px;
+ padding: 8px 12px;
+ pointer-events: none;
+ font-size: 11px;
+ color: white;
+ box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+ display: none;
+ z-index: 100;
+ backdrop-filter: blur(4px);
+ }
+
+ .tier-card {
+ transition: all 0.3s ease;
+ }
+ 
+ .tier-card.active {
+ border-color: #10b981;
+ background: rgba(16, 185, 129, 0.1);
+ transform: scale(1.02);
+ }
+ 
+ .feature-list li {
+ position: relative;
+ padding-left: 1.5rem;
+ margin-bottom: 0.75rem;
+ font-size: 0.875rem;
+ color: rgba(255,255,255,0.8);
+ }
+ 
+ .feature-list li::before {
+ content: "✓";
+ position: absolute;
+ left: 0;
+ color: #10b981;
+ font-weight: bold;
+ }
+ 
+ .feature-list li.locked::before {
+ content: "✕";
+ color: #6b7280;
+ }
+ 
+ .feature-list li.locked {
+ color: rgba(255,255,255,0.4);
+ text-decoration: line-through;
+ }
+ 
+ .scan-line {
+ position: absolute;
+ top: 0;
+ left: 0;
+ right: 0;
+ height: 2px;
+ background: linear-gradient(90deg, transparent, #10b981, transparent);
+ animation: scan 2s linear infinite;
+ display: none;
+ }
+ 
+ @keyframes scan {
+ 0% { top: 0; opacity: 0; }
+ 10% { opacity: 1; }
+ 90% { opacity: 1; }
+ 100% { top: 100%; opacity: 0; }
+ }
+ 
+ .chat-bubble {
+ max-width: 80%;
+ padding: 12px 16px;
+ border-radius: 16px;
+ margin-bottom: 12px;
+ font-size: 14px;
+ line-height: 1.5;
+ animation: fadeIn 0.3s ease;
+ }
+ 
+ .chat-user {
+ background: #10b981;
+ margin-left: auto;
+ border-bottom-right-radius: 4px;
+ }
+ 
+ .chat-ai {
+ background: rgba(255,255,255,0.1);
+ border-bottom-left-radius: 4px;
+ border: 1px solid rgba(255,255,255,0.1);
+ }
+ 
+ .typing-dot {
+ display: inline-block;
+ width: 6px;
+ height: 6px;
+ background: rgba(255,255,255,0.5);
+ border-radius: 50%;
+ margin: 0 2px;
+ animation: typing 1.4s infinite;
+ }
+ 
+ .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+ .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+ 
+ @keyframes typing {
+ 0%, 60%, 100% { transform: translateY(0); }
+ 30% { transform: translateY(-4px); }
+ }
+ 
+ .price-tag {
+ background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+ box-shadow: 0 4px 20px rgba(16, 185, 129, 0.3);
+ }
+ 
+ .badge-hot {
+ background: linear-gradient(90deg, #f59e0b, #d97706);
+ animation: pulse 2s infinite;
+ }
+ 
+ @keyframes pulse {
+ 0%, 100% { opacity: 1; }
+ 50% { opacity: 0.8; }
+ }
+ 
+ .diagnosis-result {
+ display: none;
+ }
+ 
+ .diagnosis-result.show {
+ display: block;
+ animation: slideUp 0.5s ease;
+ }
+ 
+ @keyframes slideUp {
+ from { opacity: 0; transform: translateY(20px); }
+ to { opacity: 1; transform: translateY(0); }
+ }
+ 
+ .tier-tab {
+ transition: all 0.3s ease;
+ }
+ </style>
+<base target="_blank">
+</head>
+<body class="text-white h-screen overflow-hidden relative">
+
+ <!-- 状态栏 -->
+ <div class="fixed top-0 w-full h-12 bg-black/30 backdrop-blur-md z-50 flex items-center justify-between px-4 text-xs">
+ <span id="clock">12:30</span>
+ <div class="flex gap-2 items-center">
+ <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+ <span>AeroGrow-Pro</span>
+ </div>
+ <span>100%</span>
+ </div>
+
+ <!-- Onboarding 流程 -->
+ <div id="onboarding-flow" class="fixed inset-x-0 top-0 bottom-20 bg-gray-950 z-40 flex flex-col hidden">
+ <div class="w-full h-1 bg-gray-800 mt-12">
+ <div id="onboarding-progress" class="h-full bg-green-500 transition-all duration-500" style="width: 0%"></div>
+ </div>
+
+ <div id="step-1" class="onboarding-step flex-1 flex flex-col items-center justify-center p-6 active">
+ <div class="w-28 h-28 mb-6 relative">
+ <div class="absolute inset-0 bg-green-500/20 rounded-full animate-ping"></div>
+ <div class="relative w-full h-full bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center text-4xl shadow-2xl">🌱</div>
+ </div>
+ <h1 class="text-2xl font-bold mb-2 text-center">AeroGrow Pro</h1>
+ <p class="text-gray-400 text-center mb-6 max-w-xs text-sm">为您的植物群落创建最佳光环境。</p>
+ <button onclick="nextStep(2)" class="w-full max-w-xs bg-green-600 hover:bg-green-500 text-white py-3 rounded-xl font-semibold shadow-lg">开始配置</button>
+ <button onclick="skipOnboarding()" class="mt-4 text-sm text-gray-500 hover:text-white">跳过，直接控制灯光</button>
+ </div>
+
+ <div id="step-2" class="onboarding-step flex-1 flex flex-col hidden relative overflow-hidden">
+ <div class="absolute inset-0 bg-gray-900 flex items-center justify-center">
+ <div class="w-64 h-64 rounded-full border-2 border-green-500/30 relative">
+ <div class="absolute inset-0 rounded-full scanning-radar"></div>
+ </div>
+ <div class="absolute bottom-32 text-center">
+ <div class="text-2xl mb-2">🪴 🌿 🎋</div>
+ <div class="text-sm text-gray-400">检测到 3 株植物</div>
+ </div>
+ </div>
+ </div>
+
+ <div id="step-3" class="onboarding-step flex-1 flex flex-col hidden p-6 pt-16 overflow-y-auto">
+ <h2 class="text-xl font-bold mb-4">选择主栽植物</h2>
+ <div class="space-y-3 mb-6">
+ <div class="glass rounded-xl p-4 border-2 border-green-500 cursor-pointer" onclick="selectPrimary(1)">
+ <div class="flex items-center gap-3">
+ <div class="w-12 h-12 bg-green-900/50 rounded-full flex items-center justify-center text-2xl">🌿</div>
+ <div>
+ <div class="font-semibold">龟背竹</div>
+ <div class="text-xs text-gray-400 mt-0.5">需光量: 高 (12 DLI)</div>
+ </div>
+ </div>
+ </div>
+ <div class="glass rounded-xl p-4 border-2 border-transparent opacity-50 cursor-pointer" onclick="selectPrimary(2)">
+ <div class="flex items-center gap-3">
+ <div class="w-12 h-12 bg-blue-900/50 rounded-full flex items-center justify-center text-2xl">🌱</div>
+ <div>
+ <div class="font-semibold">绿萝</div>
+ <div class="text-xs text-gray-400 mt-0.5">需光量: 中 (8 DLI)</div>
+ </div>
+ </div>
+ </div>
+ </div>
+ <button onclick="completeOnboarding()" class="w-full bg-green-600 hover:bg-green-500 text-white py-3 rounded-xl font-semibold shadow-lg">确认配置</button>
+ </div>
+ </div>
+
+ <!-- 主内容区 -->
+ <div id="main-app" class="h-full pb-24 pt-12 overflow-y-auto no-scrollbar relative">
+ 
+ <!-- 首页（植物页） -->
+ <div id="page-plants" class="page active px-5 py-4">
+ <div class="mb-4 flex items-center justify-between">
+ <div>
+ <h1 class="text-xl font-bold" id="zone-name">客厅书架区</h1>
+ <p class="text-gray-400 text-sm" id="plant-count">3株植物 · 主栽: 龟背竹</p>
+ </div>
+ <button onclick="startOnboarding()" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-lg hover:bg-white/20 transition-colors">+</button>
+ </div>
+
+ <!-- 统计栏 -->
+ <div class="glass rounded-xl p-4 mb-4">
+ <div class="grid grid-cols-4 gap-2 text-center divide-x divide-white/10">
+ <div>
+ <div class="text-[10px] text-gray-400 mb-1">目标DLI</div>
+ <div class="text-lg font-bold text-green-400">14.2</div>
+ <div class="text-[9px] text-gray-500">mol/m²/d</div>
+ </div>
+ <div>
+ <div class="text-[10px] text-gray-400 mb-1">实际DLI</div>
+ <div class="text-lg font-bold text-white">10.8</div>
+ <div class="text-[9px] text-gray-500">mol/m²/d</div>
+ </div>
+ <div>
+ <div class="text-[10px] text-gray-400 mb-1">环境光</div>
+ <div class="text-lg font-bold text-emerald-600">310</div>
+ <div class="text-[9px] text-gray-500">μmol/m²s</div>
+ </div>
+ <div>
+ <div class="text-[10px] text-gray-400 mb-1">补光功率</div>
+ <div class="text-lg font-bold text-green-300">150</div>
+ <div class="text-[9px] text-gray-500">μmol/m²s</div>
+ </div>
+ </div>
+ </div>
+
+ <!-- 区域PPFD曲线图 -->
+ <div class="glass rounded-xl p-4 mb-4 relative">
+ <div class="flex justify-between items-center mb-3">
+ <h3 class="font-semibold text-sm">今日区域光环境</h3>
+ <div class="flex items-center gap-2 text-[10px]">
+ <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-500"></span>目标</span>
+ <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-emerald-800"></span>自然</span>
+ <span class="flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-400"></span>补光</span>
+ </div>
+ </div>
+ 
+ <div class="relative h-56 bg-gray-900/30 rounded-lg overflow-hidden cursor-crosshair" id="chartContainer">
+ <canvas id="ppfdCanvasDisplay" class="w-full h-full"></canvas>
+ <div id="chartTooltip" class="chart-tooltip"></div>
+ </div>
+
+ <div class="flex justify-between mt-3 text-[10px] text-gray-400 px-1">
+ <div class="flex items-center gap-3">
+ <div class="flex items-center gap-1">
+ <div class="w-6 h-1.5 bg-emerald-900 rounded-sm"></div>
+ <span>自然光</span>
+ </div>
+ <div class="flex items-center gap-1">
+ <div class="w-6 h-1.5 bg-green-400 rounded-sm"></div>
+ <span>系统补光</span>
+ </div>
+ </div>
+ <div class="text-green-400 font-medium">实时自动补偿中</div>
+ </div>
+ </div>
+
+ <!-- 植物列表 -->
+ <div class="space-y-2 mb-4">
+ <div class="text-xs text-gray-500 mb-2 uppercase tracking-wider">区域植物</div>
+ 
+ <div class="glass rounded-lg p-3 border-l-4 border-green-500 bg-green-900/10">
+ <div class="flex items-center justify-between">
+ <div class="flex items-center gap-3">
+ <div class="w-10 h-10 rounded-full bg-green-900/50 flex items-center justify-center text-xl border-2 border-green-500">🌿</div>
+ <div>
+ <div class="flex items-center gap-2">
+ <span class="font-semibold text-sm">龟背竹</span>
+ <span class="text-[9px] bg-green-500 text-white px-1.5 py-0.5 rounded">主栽</span>
+ </div>
+ <div class="text-xs text-gray-400 mt-0.5">目标DLI: 12 · 当前76%</div>
+ </div>
+ </div>
+ <div class="text-right">
+ <div class="text-lg font-bold text-green-400">9.1<span class="text-xs font-normal text-gray-400">/12</span></div>
+ </div>
+ </div>
+ </div>
+
+ <div class="glass rounded-lg p-3 border-l-4 border-emerald-600/50">
+ <div class="flex items-center justify-between">
+ <div class="flex items-center gap-3">
+ <div class="w-10 h-10 rounded-full bg-emerald-900/30 flex items-center justify-center text-xl">🌱</div>
+ <div>
+ <div class="font-semibold text-sm">绿萝</div>
+ <div class="text-xs text-gray-400 mt-0.5">适应良好</div>
+ </div>
+ </div>
+ <span class="text-[10px] px-2 py-1 rounded adapt-good">耐受范围内</span>
+ </div>
+ </div>
+
+ <div class="glass rounded-lg p-3 border-l-4 border-yellow-500/50">
+ <div class="flex items-center justify-between">
+ <div class="flex items-center gap-3">
+ <div class="w-10 h-10 rounded-full bg-yellow-900/30 flex items-center justify-center text-xl">🎋</div>
+ <div>
+ <div class="font-semibold text-sm">散尾葵</div>
+ <div class="text-xs text-gray-400 mt-0.5">建议前移10cm</div>
+ </div>
+ </div>
+ <span class="text-[10px] px-2 py-1 rounded adapt-warning">边缘光弱</span>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <!-- 灯光页 -->
+ <div id="page-light" class="page px-5 py-4">
+ <div class="mb-4">
+ <h2 class="text-xl font-bold">灯光控制</h2>
+ <p class="text-gray-400 text-sm">AR空间光场分布 • 60×40cm照射范围</p>
+ </div>
+
+ <div class="glass rounded-xl p-4 mb-4 flex items-center justify-between">
+ <div class="flex items-center gap-3">
+ <div class="w-10 h-10 rounded-full bg-yellow-500/20 flex items-center justify-center text-xl">💡</div>
+ <div>
+ <div class="font-medium">区域补光灯</div>
+ <div class="text-xs text-gray-400" id="light-status">运行中 · 功率58W</div>
+ </div>
+ </div>
+ <button onclick="toggleLightPower()" id="lightPowerBtn" class="w-14 h-8 bg-green-600 rounded-full relative transition-colors">
+ <div class="absolute right-1 top-1 w-6 h-6 bg-white rounded-full shadow transition-transform"></div>
+ </button>
+ </div>
+
+ <!-- AR热力图 -->
+ <div class="glass rounded-xl p-4 mb-4">
+ <div class="flex justify-between items-center mb-3">
+ <h3 class="font-semibold text-sm">PPFD 空间分布热力图</h3>
+ <div class="flex items-center gap-2 text-[10px] text-gray-400">
+ <span class="w-2 h-2 rounded-full bg-red-500"></span>高
+ <span class="w-2 h-2 rounded-full bg-yellow-500"></span>中
+ <span class="w-2 h-2 rounded-full bg-green-500"></span>低
+ </div>
+ </div>
+ 
+ <div class="relative h-72 bg-gray-900/50 rounded-lg overflow-hidden cursor-crosshair" id="heatmapContainer" style="background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 20px 20px;">
+ <canvas id="heatmapCanvas" class="w-full h-full absolute inset-0"></canvas>
+ 
+ <div class="absolute left-1/2 top-1/3 transform -translate-x-1/2 -translate-y-1/2 pointer-events-none">
+ <div class="w-6 h-6 bg-white rounded-full shadow-[0_0_30px_rgba(255,255,255,0.9)] animate-pulse border-2 border-yellow-400"></div>
+ <div class="absolute -inset-2 border border-white/30 rounded-full animate-ping"></div>
+ </div>
+ 
+ <div class="ar-plant-marker" style="left: 50%; top: 35%;" onclick="showPlantDetail('龟背竹', 420)">
+ <div class="ar-data-card">
+ <div class="flex items-center gap-1 mb-0.5">
+ <span class="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
+ <span class="text-gray-300">龟背竹</span>
+ </div>
+ <div class="text-lg font-bold text-orange-400 leading-none">420</div>
+ <div class="text-[8px] text-gray-500 mt-0.5">μmol/m²s</div>
+ </div>
+ <div class="ar-plant-icon bg-orange-500/30">🌿</div>
+ </div>
+ 
+ <div class="ar-plant-marker" style="left: 28%; top: 55%; animation-delay: 0.5s;" onclick="showPlantDetail('绿萝', 380)">
+ <div class="ar-data-card">
+ <div class="flex items-center gap-1 mb-0.5">
+ <span class="w-1.5 h-1.5 rounded-full bg-yellow-500"></span>
+ <span class="text-gray-300">绿萝</span>
+ </div>
+ <div class="text-lg font-bold text-yellow-400 leading-none">380</div>
+ <div class="text-[8px] text-gray-500 mt-0.5">μmol/m²s</div>
+ </div>
+ <div class="ar-plant-icon bg-yellow-500/30">🌱</div>
+ </div>
+ 
+ <div class="ar-plant-marker" style="left: 72%; top: 65%; animation-delay: 1s;" onclick="showPlantDetail('散尾葵', 240)">
+ <div class="ar-data-card">
+ <div class="flex items-center gap-1 mb-0.5">
+ <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+ <span class="text-gray-300">散尾葵</span>
+ <span class="text-[8px] text-yellow-400 ml-1">⚠️</span>
+ </div>
+ <div class="text-lg font-bold text-blue-400 leading-none">240</div>
+ <div class="text-[8px] text-gray-500 mt-0.5">μmol/m²s</div>
+ </div>
+ <div class="ar-plant-icon bg-blue-500/30 border-yellow-400/50">🎋</div>
+ </div>
+ 
+ <div class="absolute inset-0 pointer-events-none overflow-hidden">
+ <div class="h-0.5 bg-gradient-to-r from-transparent via-green-400/50 to-transparent w-full absolute animate-[scan_3s_linear_infinite]"></div>
+ </div>
+ 
+ <div id="heatmapTooltip" class="heatmap-tooltip"></div>
+ </div>
+
+ <div class="flex justify-between mt-3 text-[10px] text-gray-400 px-2">
+ <div class="flex items-center gap-2">
+ <div class="flex items-center gap-1">
+ <div class="w-3 h-3 rounded-full border-2 border-red-500/50 bg-red-500/20"></div>
+ <span>>400 充足</span>
+ </div>
+ <div class="flex items-center gap-1">
+ <div class="w-3 h-3 rounded-full border-2 border-yellow-500/50 bg-yellow-500/20"></div>
+ <span>300-400 良好</span>
+ </div>
+ <div class="flex items-center gap-1">
+ <div class="w-3 h-3 rounded-full border-2 border-green-500/50 bg-green-500/20"></div>
+ <span>200-300 中等</span>
+ </div>
+ <div class="flex items-center gap-1">
+ <div class="w-3 h-3 rounded-full border-2 border-blue-500/50 bg-blue-500/20"></div>
+ <span><200 不足</span>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <div class="grid grid-cols-3 gap-3 mb-4">
+ <div class="glass rounded-lg p-3 text-center">
+ <div class="text-[10px] text-gray-400 mb-1">中心峰值</div>
+ <div class="text-xl font-bold text-orange-400" id="centerDisplay">480</div>
+ <div class="text-[9px] text-gray-500">μmol/m²s</div>
+ </div>
+ <div class="glass rounded-lg p-3 text-center">
+ <div class="text-[10px] text-gray-400 mb-1">平均光强</div>
+ <div class="text-xl font-bold text-yellow-400">340</div>
+ <div class="text-[9px] text-gray-500">μmol/m²s</div>
+ </div>
+ <div class="glass rounded-lg p-3 text-center">
+ <div class="text-[10px] text-gray-400 mb-1">均匀度</div>
+ <div class="text-xl font-bold text-green-400">78%</div>
+ <div class="text-[9px] text-gray-500">目标 >75%</div>
+ </div>
+ </div>
+
+ <div class="glass rounded-xl p-4 mb-4">
+ <h3 class="font-semibold text-sm mb-4">光强调节</h3>
+ <div class="mb-4">
+ <div class="flex justify-between text-xs mb-2">
+ <span class="text-gray-400">中心亮度 (PPFD)</span>
+ <span id="centerPPFD" class="text-orange-400 font-bold">480 μmol/m²s</span>
+ </div>
+ <input type="range" min="100" max="800" value="480" class="w-full" oninput="updateHeatmap(this.value)">
+ <div class="flex justify-between text-[10px] text-gray-500 mt-1">
+ <span>100</span>
+ <span>450</span>
+ <span>800</span>
+ </div>
+ </div>
+ 
+ <div class="flex gap-2">
+ <button onclick="applyHeatmapSettings()" class="flex-1 bg-green-600 hover:bg-green-500 text-white py-3 rounded-xl font-medium transition-colors text-sm">应用设置</button>
+ <button onclick="optimizeLayout()" class="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-xl font-medium transition-colors text-sm">AR优化布局</button>
+ </div>
+ </div>
+
+ <div class="glass rounded-xl p-4 mb-20">
+ <h3 class="font-semibold text-sm mb-4">光谱控制</h3>
+ <div class="space-y-4">
+ <div>
+ <div class="flex justify-between text-xs mb-1">
+ <span class="text-blue-400">450nm 蓝光</span>
+ <span id="blueValue">65%</span>
+ </div>
+ <input type="range" min="0" max="100" value="65" class="w-full" oninput="updateSpectrum('blue', this.value)">
+ </div>
+ <div>
+ <div class="flex justify-between text-xs mb-1">
+ <span class="text-white">CCT 色温</span>
+ <span id="cctValue">4000K</span>
+ </div>
+ <input type="range" min="2700" max="6500" value="4000" class="w-full" oninput="updateSpectrum('cct', this.value)">
+ </div>
+ <div>
+ <div class="flex justify-between text-xs mb-1">
+ <span class="text-purple-400">730nm 远红光</span>
+ <span id="farRedValue">2h/夜</span>
+ </div>
+ <input type="range" min="0" max="4" step="0.5" value="2" class="w-full" oninput="updateSpectrum('farred', this.value)">
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <!-- 我的页 -->
+ <div id="page-me" class="page px-5 py-4">
+ <div class="mb-6">
+ <h2 class="text-xl font-bold">我的</h2>
+ <p class="text-gray-400 text-sm">设备与系统</p>
+ </div>
+
+ <div class="glass-card rounded-xl p-4 mb-4">
+ <div class="flex items-center gap-3 mb-4">
+ <div class="w-12 h-12 rounded-full bg-blue-900/50 flex items-center justify-center text-xl">💡</div>
+ <div>
+ <div class="font-medium">AeroGrow-Pro-01</div>
+ <div class="text-xs text-green-400">● 在线</div>
+ </div>
+ </div>
+ <div class="grid grid-cols-2 gap-2 text-center text-xs">
+ <div class="bg-gray-800/30 rounded p-2">
+ <div class="text-gray-400 text-[10px]">照射范围</div>
+ <div class="mt-1 font-medium">60×40cm</div>
+ </div>
+ <div class="bg-gray-800/30 rounded p-2">
+ <div class="text-gray-400 text-[10px]">运行时长</div>
+ <div class="mt-1 font-medium">156小时</div>
+ </div>
+ </div>
+ </div>
+
+ <!-- 订阅服务入口 -->
+ <div class="glass-card rounded-xl p-4 mb-4 border border-green-500/30 cursor-pointer hover:bg-white/10 transition-colors" onclick="showSubscription()">
+ <div class="flex items-center justify-between">
+ <div class="flex items-center gap-3">
+ <div class="w-12 h-12 rounded-full bg-gradient-to-br from-green-400 to-emerald-600 flex items-center justify-center text-xl shadow-lg shadow-green-500/20">
+ 💎
+ </div>
+ <div>
+ <div class="font-semibold">订阅服务</div>
+ <div class="text-xs text-green-400 mt-0.5" id="current-tier-display">当前：Bloom 盛放版</div>
+ </div>
+ </div>
+ <div class="flex items-center gap-2 text-gray-400">
+ <span class="text-xs">管理</span>
+ <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+ </div>
+ </div>
+ <div class="mt-3 pt-3 border-t border-white/10 flex justify-between items-center text-xs text-gray-400">
+ <span>AI 植物医生 · DLI 智能托管</span>
+ <span class="text-green-400">已激活</span>
+ </div>
+ </div>
+
+ <button onclick="resetApp()" class="w-full glass rounded-xl p-4 text-red-400 border border-red-500/30 hover:bg-red-500/10 transition-colors text-sm mb-20">
+ 重置所有数据
+ </button>
+ </div>
+
+ <!-- 订阅服务页面 -->
+ <div id="page-subscription" class="page fixed inset-0 bg-gray-950 z-50 overflow-y-auto no-scrollbar">
+ <div class="sticky top-0 w-full h-14 bg-gray-900/95 backdrop-blur-md z-50 flex items-center justify-between px-4 border-b border-white/10">
+ <button onclick="hideSubscription()" class="flex items-center gap-1 text-gray-400 hover:text-white transition-colors">
+ <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+ <span class="text-sm">我的</span>
+ </button>
+ <h1 class="text-base font-bold">订阅服务</h1>
+ <div class="w-12"></div>
+ </div>
+
+ <div class="px-5 py-6 pb-24">
+ <div class="mb-6 text-center">
+ <div class="w-16 h-16 bg-gradient-to-br from-green-400 to-emerald-600 rounded-2xl mx-auto mb-4 flex items-center justify-center text-3xl shadow-lg shadow-green-500/20">
+ 🌿
+ </div>
+ <h1 class="text-2xl font-bold mb-2">选择您的养护方案</h1>
+ <p class="text-gray-400 text-sm">从基础控制到 AI 植物医生，找到适合您的层级</p>
+ </div>
+
+ <div class="glass rounded-xl p-1 mb-6 flex">
+ <button onclick="switchTier('seed')" class="tier-tab flex-1 py-2 rounded-lg text-sm font-medium transition-all text-center" data-tier="seed">Seed</button>
+ <button onclick="switchTier('sprout')" class="tier-tab flex-1 py-2 rounded-lg text-sm font-medium transition-all text-center" data-tier="sprout">萌芽版</button>
+ <button onclick="switchTier('bloom')" class="tier-tab flex-1 py-2 rounded-lg text-sm font-medium transition-all text-center bg-green-600 text-white" data-tier="bloom">Bloom</button>
+ </div>
+
+ <!-- Seed -->
+ <div id="tier-seed" class="tier-content hidden">
+ <div class="glass-card rounded-2xl p-6 mb-4">
+ <div class="flex justify-between items-start mb-4">
+ <div>
+ <h2 class="text-xl font-bold">Seed 免费版</h2>
+ <p class="text-gray-400 text-sm mt-1">基础硬件控制</p>
+ </div>
+ <span class="px-3 py-1 rounded-full text-xs bg-gray-700 text-gray-300">永久免费</span>
+ </div>
+ <ul class="feature-list mb-6">
+ <li>手动亮度调节 (20-100%)</li>
+ <li>3 组定时开关设置</li>
+ <li>3 种预设光谱模式</li>
+ <li>本地数据存储 (7天)</li>
+ <li class="locked">AI 植物识别</li>
+ <li class="locked">自动 DLI 补光</li>
+ <li class="locked">病虫害诊断</li>
+ </ul>
+ <button class="w-full py-3 rounded-xl bg-gray-700 text-gray-300 font-medium">当前方案</button>
+ </div>
+ </div>
+
+ <!-- 萌芽版 -->
+ <div id="tier-sprout" class="tier-content hidden">
+ <div class="glass-card rounded-2xl p-6 mb-4 border border-emerald-500/30">
+ <div class="flex justify-between items-start mb-4">
+ <div>
+ <h2 class="text-xl font-bold text-emerald-400">萌芽版</h2>
+ <p class="text-gray-400 text-sm mt-1">AI 托管，养不死</p>
+ </div>
+ <div class="text-right">
+ <div class="text-2xl font-bold">¥29<span class="text-sm font-normal text-gray-400">/月</span></div>
+ <div class="text-xs text-gray-500">¥299/年 省 ¥49</div>
+ </div>
+ </div>
+ <ul class="feature-list mb-6">
+ <li>包含 Seed 全部功能</li>
+ <li>🤖 DLI 智能闭环（自动补光）</li>
+ <li>👁️ AI 识别 800+ 植物品种</li>
+ <li>📸 每周自动生长记录</li>
+ <li>💧 智能浇水提醒</li>
+ <li>☁️ 6 个月云存储</li>
+ <li class="locked">🏥 AI 病虫害诊断</li>
+ <li class="locked">🧠 大模型知识问答</li>
+ </ul>
+ <button class="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium transition-colors">升级至萌芽版</button>
+ </div>
+ </div>
+
+ <!-- Bloom -->
+ <div id="tier-bloom" class="tier-content">
+ <div class="glass-card rounded-2xl p-6 mb-4 border border-green-500 relative overflow-hidden">
+ <div class="absolute top-0 right-0 badge-hot text-white text-[10px] px-3 py-1 rounded-bl-lg font-bold">推荐</div>
+ <div class="flex justify-between items-start mb-4">
+ <div>
+ <h2 class="text-xl font-bold text-green-400">Bloom 盛放版</h2>
+ <p class="text-gray-400 text-sm mt-1">AI 植物医生 + 24h 顾问</p>
+ </div>
+ <div class="text-right">
+ <div class="text-2xl font-bold">¥59<span class="text-sm font-normal text-gray-400">/月</span></div>
+ <div class="text-xs text-gray-500">¥599/年 省 ¥109</div>
+ </div>
+ </div>
+ <ul class="feature-list mb-6">
+ <li>包含萌芽版全部功能</li>
+ <li>🏥 <span class="text-green-400 font-medium">AI 病虫害医生</span>
+ <p class="text-xs text-gray-500 mt-1 ml-0">每周自动巡检，识别红蜘蛛/白粉病等</p>
+ </li>
+ <li>🧠 <span class="text-green-400 font-medium">大模型知识问答</span>
+ <p class="text-xs text-gray-500 mt-1 ml-0">24h 在线植物专家，拍照即诊断</p>
+ </li>
+ <li>🧪 全光谱实验室（自定义光配方）</li>
+ <li>📊 生长瓶颈智能分析</li>
+ <li>💾 永久云存储 + 家庭共享</li>
+ </ul>
+ <button onclick="showSubPage('demo-ai')" class="w-full py-3 rounded-xl price-tag text-white font-medium shadow-lg hover:shadow-green-500/40 transition-all">体验 AI 功能</button>
+ </div>
+
+ <div class="grid grid-cols-2 gap-3 mb-4">
+ <div onclick="showSubPage('demo-diagnosis')" class="glass rounded-xl p-4 cursor-pointer hover:bg-white/10 transition-colors">
+ <div class="w-10 h-10 bg-red-500/20 rounded-full flex items-center justify-center text-xl mb-2">🏥</div>
+ <div class="font-semibold text-sm">病虫害诊断</div>
+ <div class="text-xs text-gray-400 mt-1">拍照识别 + 治疗方案</div>
+ </div>
+ <div onclick="showSubPage('demo-chat')" class="glass rounded-xl p-4 cursor-pointer hover:bg-white/10 transition-colors">
+ <div class="w-10 h-10 bg-blue-500/20 rounded-full flex items-center justify-center text-xl mb-2">🧠</div>
+ <div class="font-semibold text-sm">知识问答</div>
+ <div class="text-xs text-gray-400 mt-1">24h 植物专家</div>
+ </div>
+ </div>
+ </div>
+
+ <button onclick="showSubPage('compare')" class="w-full glass rounded-xl p-4 text-sm text-gray-300 hover:text-white transition-colors flex items-center justify-center gap-2">
+ <span>查看完整功能对比</span>
+ <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+ </button>
+ </div>
+
+ <!-- 子页面：AI诊断 -->
+ <div id="subpage-demo-diagnosis" class="subpage hidden fixed inset-0 bg-gray-950 z-[60] overflow-y-auto">
+ <div class="sticky top-0 w-full h-14 bg-gray-900/95 backdrop-blur-md z-50 flex items-center justify-between px-4 border-b border-white/10">
+ <button onclick="hideSubPage()" class="flex items-center gap-1 text-gray-400 hover:text-white transition-colors">
+ <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+ <span class="text-sm">返回</span>
+ </button>
+ <h1 class="text-base font-bold">AI 病虫害医生</h1>
+ <div class="w-12"></div>
+ </div>
+
+ <div class="px-5 py-6">
+ <div class="glass-card rounded-2xl p-4 mb-4">
+ <div class="relative bg-gray-900 rounded-lg overflow-hidden mb-4" style="height: 300px;" id="diagnosisArea">
+ <img id="leafImage" src="https://images.unsplash.com/photo-1614594975525-e45190c55d0b?w=800&auto=format&fit=crop&q=60" class="w-full h-full object-cover opacity-60" alt="植物叶片">
+ <div class="scan-line" id="scanLine"></div>
+ 
+ <div id="diagnosisResult" class="diagnosis-result absolute inset-0 bg-black/80 backdrop-blur-sm p-6 flex flex-col justify-center">
+ <div class="flex items-start gap-3 mb-4">
+ <div class="w-12 h-12 rounded-full bg-red-500/20 flex items-center justify-center text-2xl">⚠️</div>
+ <div>
+ <div class="font-bold text-red-400 mb-1">检测到：红蜘蛛（轻度）</div>
+ <div class="text-sm text-gray-300">置信度：94%</div>
+ </div>
+ </div>
+ <div class="space-y-3 text-sm">
+ <div class="glass p-3 rounded-lg">
+ <div class="text-gray-400 text-xs mb-1">症状特征</div>
+ <div>叶片正面出现针尖大小黄点，叶背可见细微蛛网</div>
+ </div>
+ <div class="glass p-3 rounded-lg">
+ <div class="text-gray-400 text-xs mb-1">治疗方案</div>
+ <ul class="list-disc list-inside text-gray-300 space-y-1">
+ <li>光环境：增加 730nm 远红光 2h/夜（抑制繁殖）</li>
+ <li>物理：用湿布擦拭叶背，增加环境湿度</li>
+ <li>药物：推荐联苯肼酯（点击购买）</li>
+ </ul>
+ </div>
+ </div>
+ </div>
+
+ <div id="diagnosisHint" class="absolute inset-0 flex items-center justify-center flex-col">
+ <div class="w-16 h-16 rounded-full bg-white/10 flex items-center justify-center text-3xl mb-3">📷</div>
+ <div class="text-sm text-gray-300">点击开始扫描诊断</div>
+ </div>
+ </div>
+
+ <div class="flex gap-2">
+ <button onclick="startDiagnosis()" class="flex-1 bg-red-500 hover:bg-red-600 text-white py-3 rounded-xl font-medium transition-colors">开始诊断</button>
+ <button onclick="resetDiagnosis()" class="px-4 py-3 rounded-xl bg-gray-700 text-gray-300">重置</button>
+ </div>
+ </div>
+
+ <div class="glass rounded-xl p-4">
+ <h3 class="font-semibold mb-3 text-sm">Bloom 版专属能力</h3>
+ <div class="space-y-3 text-sm text-gray-300">
+ <div class="flex gap-3">
+ <span class="text-green-400">✓</span>
+ <span>每周自动巡检，无需手动操作</span>
+ </div>
+ <div class="flex gap-3">
+ <span class="text-green-400">✓</span>
+ <span>识别红蜘蛛、蚜虫、白粉病等 50+ 常见问题</span>
+ </div>
+ <div class="flex gap-3">
+ <span class="text-green-400">✓</span>
+ <span>结合光照数据，推荐光谱调整方案</span>
+ </div>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <!-- 子页面：AI问答 -->
+ <div id="subpage-demo-chat" class="subpage hidden fixed inset-0 bg-gray-950 z-[60] flex flex-col">
+ <div class="sticky top-0 w-full h-14 bg-gray-900/95 backdrop-blur-md z-50 flex items-center justify-between px-4 border-b border-white/10">
+ <button onclick="hideSubPage()" class="flex items-center gap-1 text-gray-400 hover:text-white transition-colors">
+ <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+ <span class="text-sm">返回</span>
+ </button>
+ <div class="text-center">
+ <h1 class="text-base font-bold">植物知识助手</h1>
+ <div class="text-[10px] text-green-400 flex items-center justify-center gap-1">
+ <span class="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse"></span>
+ Bloom 版专属 · 24h 在线
+ </div>
+ </div>
+ <div class="w-12"></div>
+ </div>
+
+ <div class="flex-1 overflow-y-auto p-5" id="chatContainer">
+ <div class="chat-bubble chat-ai">
+ 您好！我是您的 AI 植物顾问。您可以问我任何问题，比如：<br><br>
+ • "我的龟背竹叶子发黄怎么办？"<br>
+ • "刚买的琴叶榕怎么养护？"<br>
+ • "这是什么植物？"
+ </div>
+
+ <div id="chatMessages"></div>
+
+ <div id="typingIndicator" class="hidden chat-bubble chat-ai">
+ <span class="typing-dot"></span>
+ <span class="typing-dot"></span>
+ <span class="typing-dot"></span>
+ </div>
+ </div>
+
+ <div class="px-5 py-2 bg-gray-900/50 border-t border-white/5">
+ <div class="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+ <button onclick="askQuestion('龟背竹气生根太多需要剪掉吗？')" class="whitespace-nowrap px-3 py-1.5 rounded-full bg-white/10 text-xs hover:bg-white/20 transition-colors">气生根处理</button>
+ <button onclick="askQuestion('植物叶子耷拉是不是缺水？')" class="whitespace-nowrap px-3 py-1.5 rounded-full bg-white/10 text-xs hover:bg-white/20 transition-colors">缺水判断</button>
+ <button onclick="askQuestion('冬天需要减少光照时间吗？')" class="whitespace-nowrap px-3 py-1.5 rounded-full bg-white/10 text-xs hover:bg-white/20 transition-colors">冬季养护</button>
+ </div>
+ </div>
+
+ <div class="p-4 bg-gray-900 border-t border-white/10">
+ <div class="glass rounded-xl p-2 flex gap-2">
+ <input type="text" id="chatInput" placeholder="输入您的问题..." class="flex-1 bg-transparent border-none outline-none text-sm px-2 text-white placeholder-gray-500" onkeypress="if(event.key==='Enter') sendMessage()">
+ <button onclick="sendMessage()" class="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center text-white hover:bg-green-500 transition-colors">↑</button>
+ </div>
+ </div>
+ </div>
+
+ <!-- 子页面：功能对比 -->
+ <div id="subpage-compare" class="subpage hidden fixed inset-0 bg-gray-950 z-[60] overflow-y-auto">
+ <div class="sticky top-0 w-full h-14 bg-gray-900/95 backdrop-blur-md z-50 flex items-center justify-between px-4 border-b border-white/10">
+ <button onclick="hideSubPage()" class="flex items-center gap-1 text-gray-400 hover:text-white transition-colors">
+ <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+ <span class="text-sm">返回</span>
+ </button>
+ <h1 class="text-base font-bold">功能对比</h1>
+ <div class="w-12"></div>
+ </div>
+
+ <div class="px-5 py-6">
+ <div class="glass-card rounded-2xl overflow-hidden mb-6">
+ <table class="w-full text-sm">
+ <thead>
+ <tr class="border-b border-white/10 bg-white/5">
+ <th class="py-3 px-4 text-left font-medium text-gray-400">功能</th>
+ <th class="py-3 px-2 text-center font-medium text-gray-400">Seed</th>
+ <th class="py-3 px-2 text-center font-medium text-emerald-400">萌芽版</th>
+ <th class="py-3 px-2 text-center font-medium text-green-400">Bloom</th>
+ </tr>
+ </thead>
+ <tbody class="divide-y divide-white/5">
+ <tr><td class="py-3 px-4">手动控制</td><td class="py-3 px-2 text-center text-green-400">✓</td><td class="py-3 px-2 text-center text-green-400">✓</td><td class="py-3 px-2 text-center text-green-400">✓</td></tr>
+ <tr><td class="py-3 px-4">DLI 自动补光</td><td class="py-3 px-2 text-center text-gray-600">✕</td><td class="py-3 px-2 text-center text-green-400">✓</td><td class="py-3 px-2 text-center text-green-400">✓</td></tr>
+ <tr><td class="py-3 px-4">AI 植物识别</td><td class="py-3 px-2 text-center text-gray-600">✕</td><td class="py-3 px-2 text-center text-green-400">基础</td><td class="py-3 px-2 text-center text-green-400">深度</td></tr>
+ <tr><td class="py-3 px-4">浇水提醒</td><td class="py-3 px-2 text-center text-gray-600">✕</td><td class="py-3 px-2 text-center text-green-400">周期提醒</td><td class="py-3 px-2 text-center text-green-400">精准判断</td></tr>
+ <tr class="bg-green-500/5"><td class="py-3 px-4 text-green-400">AI 病虫害诊断</td><td class="py-3 px-2 text-center text-gray-600">✕</td><td class="py-3 px-2 text-center text-gray-600">✕</td><td class="py-3 px-2 text-center text-green-400 font-bold">✓</td></tr>
+ <tr class="bg-green-500/5"><td class="py-3 px-4 text-green-400">大模型知识问答</td><td class="py-3 px-2 text-center text-gray-600">✕</td><td class="py-3 px-2 text-center text-gray-600">✕</td><td class="py-3 px-2 text-center text-green-400 font-bold">✓</td></tr>
+ <tr><td class="py-3 px-4">光谱自定义</td><td class="py-3 px-2 text-center text-gray-600">预设</td><td class="py-3 px-2 text-center text-gray-600">预设</td><td class="py-3 px-2 text-center text-green-400">全自定义</td></tr>
+ <tr><td class="py-3 px-4">云存储</td><td class="py-3 px-2 text-center text-gray-600">7天</td><td class="py-3 px-2 text-center text-green-400">6个月</td><td class="py-3 px-2 text-center text-green-400">永久</td></tr>
+ </tbody>
+ </table>
+ </div>
+
+ <div class="glass rounded-xl p-4 text-center">
+ <div class="text-sm text-gray-400 mb-2">当前方案</div>
+ <div class="text-2xl font-bold mb-4 text-green-400">Bloom 盛放版</div>
+ <button onclick="hideSubPage()" class="w-full py-3 rounded-xl bg-green-600 text-white font-medium">返回订阅页</button>
+ </div>
+ </div>
+ </div>
+ </div>
+
+ <!-- 底部导航 - 改为 fixed 定位 -->
+ <div id="bottom-nav" class="fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-lg border-t border-white/10 px-6 py-3 pb-6 z-50">
+ <div class="flex justify-around items-center">
+ <button onclick="navigate('plants')" class="nav-btn active flex flex-col items-center gap-1 text-green-400" data-page="plants">
+ <span class="text-xl">🌿</span>
+ <span class="text-[10px]">植物</span>
+ </button>
+ <button onclick="navigate('light')" class="nav-btn flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors" data-page="light">
+ <span class="text-xl">💡</span>
+ <span class="text-[10px]">灯光</span>
+ </button>
+ <button onclick="navigate('me')" class="nav-btn flex flex-col items-center gap-1 text-gray-400 hover:text-white transition-colors" data-page="me">
+ <span class="text-xl">⚙️</span>
+ <span class="text-[10px]">我的</span>
+ </button>
+ </div>
+ </div>
+
+ <script>
+ // 全局变量
+ let currentStep = 1;
+ let hasPlants = true;
+ let isLightOn = true;
+ let currentCenterPPFD = 480;
+ let currentTier = 'bloom';
+
+ window.onload = function() {
+ initCanvases();
+ updateClock();
+ setInterval(updateClock, 1000);
+ setTimeout(() => {
+ if(!hasPlants) document.getElementById('onboarding-flow').classList.remove('hidden');
+ }, 100);
+ };
+
+ function updateClock() {
+ const now = new Date();
+ document.getElementById('clock').textContent = now.toLocaleTimeString('zh-CN', {hour: '2-digit', minute:'2-digit'});
+ }
+
+ function nextStep(step) {
+ document.getElementById(`step-${currentStep}`).classList.add('hidden');
+ currentStep = step;
+ document.getElementById(`step-${currentStep}`).classList.remove('hidden');
+ const progress = ((currentStep - 1) / 2) * 100;
+ document.getElementById('onboarding-progress').style.width = progress + '%';
+ if(step === 2) setTimeout(() => nextStep(3), 2000);
+ }
+
+ function selectPrimary(id) {
+ document.querySelectorAll('#step-3 .glass').forEach((el, idx) => {
+ if(idx + 1 === id) {
+ el.classList.add('border-green-500');
+ el.classList.remove('border-transparent', 'opacity-50');
+ } else {
+ el.classList.remove('border-green-500');
+ el.classList.add('border-transparent', 'opacity-50');
+ }
+ });
+ }
+
+ function completeOnboarding() {
+ hasPlants = true;
+ document.getElementById('onboarding-flow').classList.add('hidden');
+ document.getElementById('plant-count').textContent = '3株植物 · 主栽: 龟背竹';
+ showToast('配置完成');
+ drawDisplayCurve();
+ }
+
+ function skipOnboarding() {
+ document.getElementById('onboarding-flow').classList.add('hidden');
+ }
+
+ function startOnboarding() {
+ currentStep = 1;
+ document.getElementById('onboarding-progress').style.width = '0%';
+ document.getElementById('step-1').classList.remove('hidden');
+ document.getElementById('step-2').classList.add('hidden');
+ document.getElementById('step-3').classList.add('hidden');
+ document.getElementById('onboarding-flow').classList.remove('hidden');
+ }
+
+ function navigate(page) {
+ document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+ document.getElementById(`page-${page}`).classList.add('active');
+ 
+ document.querySelectorAll('.nav-btn').forEach(btn => {
+ if(btn.dataset.page === page) {
+ btn.classList.add('text-green-400');
+ btn.classList.remove('text-gray-400');
+ } else {
+ btn.classList.remove('text-green-400');
+ btn.classList.add('text-gray-400');
+ }
+ });
+ 
+ if(page === 'plants') {
+ setTimeout(drawDisplayCurve, 100);
+ } else if(page === 'light') {
+ setTimeout(initHeatmap, 100);
+ }
+ }
+
+ function showSubscription() {
+ document.getElementById('page-subscription').classList.add('active');
+ document.getElementById('bottom-nav').classList.add('hidden');
+ switchTier(currentTier);
+ }
+
+ function hideSubscription() {
+ document.getElementById('page-subscription').classList.remove('active');
+ document.getElementById('bottom-nav').classList.remove('hidden');
+ document.querySelectorAll('.subpage').forEach(sp => sp.classList.add('hidden'));
+ }
+
+ function showSubPage(pageName) {
+ document.querySelectorAll('.subpage').forEach(sp => sp.classList.add('hidden'));
+ document.getElementById(`subpage-${pageName}`).classList.remove('hidden');
+ 
+ if(pageName === 'demo-chat') {
+ setTimeout(() => {
+ const container = document.getElementById('chatContainer');
+ if(container) container.scrollTop = container.scrollHeight;
+ }, 100);
+ }
+ }
+
+ function hideSubPage() {
+ document.querySelectorAll('.subpage').forEach(sp => sp.classList.add('hidden'));
+ }
+
+ function switchTier(tier) {
+ currentTier = tier;
+ 
+ document.querySelectorAll('.tier-tab').forEach(tab => {
+ if(tab.dataset.tier === tier) {
+ tab.classList.add('bg-green-600', 'text-white');
+ tab.classList.remove('text-gray-400');
+ } else {
+ tab.classList.remove('bg-green-600', 'text-white');
+ tab.classList.add('text-gray-400');
+ }
+ });
+ 
+ document.querySelectorAll('.tier-content').forEach(content => {
+ content.classList.add('hidden');
+ });
+ document.getElementById('tier-' + tier).classList.remove('hidden');
+ 
+ const tierNames = {
+ 'seed': 'Seed 免费版',
+ 'sprout': '萌芽版',
+ 'bloom': 'Bloom 盛放版'
+ };
+ document.getElementById('current-tier-display').textContent = '当前：' + tierNames[tier];
+ }
+
+ function startDiagnosis() {
+ const scanLine = document.getElementById('scanLine');
+ const hint = document.getElementById('diagnosisHint');
+ const result = document.getElementById('diagnosisResult');
+ 
+ hint.style.display = 'none';
+ scanLine.style.display = 'block';
+ 
+ setTimeout(() => {
+ scanLine.style.display = 'none';
+ result.classList.add('show');
+ }, 2000);
+ }
+
+ function resetDiagnosis() {
+ document.getElementById('scanLine').style.display = 'none';
+ document.getElementById('diagnosisHint').style.display = 'flex';
+ document.getElementById('diagnosisResult').classList.remove('show');
+ }
+
+ const responses = {
+ '龟背竹气生根太多需要剪掉吗？': '不需要剪掉！气生根是龟背竹健康的标志，它们帮助植物吸收空气中的水分和养分。您可以：<br><br>1. 引导气生根入土，成为新的支撑根<br>2. 用苔藓柱提供攀爬支撑<br>3. 定期喷水保持气生根湿润<br><br>剪掉反而会影响植物生长哦！',
+ '植物叶子耷拉是不是缺水？': '叶子耷拉可能是缺水，也可能是其他原因：<br><br><b>检查方法：</b><br>• 用手指插入土壤 2-3cm，干燥才需要浇水<br>• 观察叶片：缺水是软塌，过水是发黄脱落<br>• 检查盆重：明显变轻才是缺水<br><br>如果土壤湿润但叶子耷拉，可能是烂根或光照过强。',
+ '冬天需要减少光照时间吗？': '是的！冬季建议：<br><br>• 光照时间：缩短至 10-12 小时（夏季 14-16 小时）<br>• 光强：可适当降低 20-30%<br>• 光谱：增加远红光比例，模拟低角度阳光<br>• 注意：朝南窗户的自然光减少，需要增加补光时间<br><br>AeroGrow 的 Bloom 版会自动根据季节调整这些参数。'
+ };
+
+ function askQuestion(text) {
+ document.getElementById('chatInput').value = text;
+ sendMessage();
+ }
+
+ function sendMessage() {
+ const input = document.getElementById('chatInput');
+ const text = input.value.trim();
+ if(!text) return;
+ 
+ addMessage(text, 'user');
+ input.value = '';
+ 
+ const typing = document.getElementById('typingIndicator');
+ typing.classList.remove('hidden');
+ 
+ const container = document.getElementById('chatContainer');
+ container.scrollTop = container.scrollHeight;
+ 
+ setTimeout(() => {
+ typing.classList.add('hidden');
+ let response = responses[text] || '这是一个很好的问题！根据您的植物当前状况（光照充足，生长良好），建议：<br><br>1. 保持当前 DLI 14.2 mol/m²/d 的光照水平<br>2. 注意通风，避免高温高湿<br>3. 每月施一次稀释的观叶植物营养液<br><br>需要我详细解释某个方面吗？';
+ addMessage(response, 'ai');
+ }, 1500);
+ }
+
+ function addMessage(text, sender) {
+ const container = document.getElementById('chatMessages');
+ const div = document.createElement('div');
+ div.className = `chat-bubble ${sender === 'user' ? 'chat-user' : 'chat-ai'}`;
+ div.innerHTML = text;
+ container.appendChild(div);
+ 
+ const chatContainer = document.getElementById('chatContainer');
+ chatContainer.scrollTop = chatContainer.scrollHeight;
+ }
+
+ function initCanvases() {
+ const canvasDisplay = document.getElementById('ppfdCanvasDisplay');
+ if(canvasDisplay) {
+ const resize = () => {
+ const rect = canvasDisplay.parentElement.getBoundingClientRect();
+ canvasDisplay.width = rect.width * window.devicePixelRatio;
+ canvasDisplay.height = rect.height * window.devicePixelRatio;
+ canvasDisplay.getContext('2d').scale(window.devicePixelRatio, window.devicePixelRatio);
+ drawDisplayCurve();
+ initChartInteraction();
+ };
+ window.addEventListener('resize', resize);
+ resize();
+ }
+ }
+
+ function generateSmoothCurve() {
+ const points = [];
+ for(let t=0; t<=1; t+=0.02) {
+ const hour = t * 24;
+ let natural = 0;
+ let boost = 0;
+ 
+ if(hour > 5 && hour < 19) {
+ const sunAngle = (hour - 5) / 14 * Math.PI;
+ natural = Math.sin(sunAngle) * 0.55;
+ const target = 0.85;
+ const deficit = target - natural;
+ if(deficit > 0.1) {
+ boost = deficit * (0.8 + 0.2 * Math.sin(sunAngle * 2));
+ }
+ }
+ 
+ if(hour >= 18 && hour <= 20) {
+ const nightPhase = (hour - 18) / 2;
+ boost = 0.08 * Math.sin(nightPhase * Math.PI);
+ }
+ 
+ points.push({hour, natural, boost, total: natural + boost});
+ }
+ return points;
+ }
+
+ function drawDisplayCurve() {
+ const canvas = document.getElementById('ppfdCanvasDisplay');
+ if(!canvas) return;
+ const ctx = canvas.getContext('2d');
+ const width = canvas.width / window.devicePixelRatio;
+ const height = canvas.height / window.devicePixelRatio;
+ const data = generateSmoothCurve();
+ 
+ ctx.clearRect(0, 0, width, height);
+ 
+ const padding = {top: 40, bottom: 30, left: 50, right: 20};
+ const chartW = width - padding.left - padding.right;
+ const chartH = height - padding.top - padding.bottom;
+ const maxY = 1.0;
+ const getX = (h) => padding.left + (h / 24) * chartW;
+ const getY = (v) => padding.top + chartH - (v / maxY) * chartH;
+ 
+ ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+ ctx.lineWidth = 1;
+ for(let i=0; i<=5; i++) {
+ const y = padding.top + (chartH/5)*i;
+ ctx.beginPath();
+ ctx.moveTo(padding.left, y);
+ ctx.lineTo(width - padding.right, y);
+ ctx.stroke();
+ }
+ for(let i=0; i<=24; i+=2) {
+ const x = getX(i);
+ ctx.beginPath();
+ ctx.moveTo(x, padding.top);
+ ctx.lineTo(x, height - padding.bottom);
+ ctx.stroke();
+ }
+ 
+ const targetY = getY(0.85);
+ ctx.save();
+ ctx.shadowColor = 'rgba(16, 185, 129, 0.6)';
+ ctx.shadowBlur = 15;
+ ctx.beginPath();
+ ctx.setLineDash([8, 4]);
+ ctx.strokeStyle = '#34D399';
+ ctx.lineWidth = 2;
+ ctx.moveTo(padding.left, targetY);
+ ctx.lineTo(width - padding.right, targetY);
+ ctx.stroke();
+ ctx.restore();
+ 
+ const targetText = 'TARGET DLI 14.2';
+ ctx.font = 'bold 11px Inter';
+ const textW = ctx.measureText(targetText).width;
+ ctx.fillStyle = 'rgba(0,0,0,0.6)';
+ ctx.fillRect(width - padding.right - textW - 10, targetY - 18, textW + 10, 16);
+ ctx.fillStyle = '#34D399';
+ ctx.textAlign = 'right';
+ ctx.fillText(targetText, width - padding.right - 5, targetY - 6);
+ 
+ ctx.beginPath();
+ ctx.moveTo(getX(0), getY(0));
+ data.forEach(p => {
+ ctx.lineTo(getX(p.hour), getY(p.natural));
+ });
+ ctx.lineTo(getX(24), getY(0));
+ ctx.closePath();
+ 
+ const naturalGrad = ctx.createLinearGradient(0, getY(0.6), 0, getY(0));
+ naturalGrad.addColorStop(0, 'rgba(6, 78, 59, 0.8)');
+ naturalGrad.addColorStop(0.5, 'rgba(5, 150, 105, 0.4)');
+ naturalGrad.addColorStop(1, 'rgba(16, 185, 129, 0.1)');
+ ctx.fillStyle = naturalGrad;
+ ctx.fill();
+ 
+ ctx.beginPath();
+ data.forEach((p, i) => {
+ const x = getX(p.hour);
+ const y = getY(p.natural + p.boost);
+ if(i===0) ctx.moveTo(x, y);
+ else {
+ const prev = data[i-1];
+ const prevX = getX(prev.hour);
+ const prevY = getY(prev.natural + prev.boost);
+ const cpX = (prevX + x) / 2;
+ ctx.quadraticCurveTo(cpX, prevY, x, y);
+ }
+ });
+ for(let i=data.length-1; i>=0; i--) {
+ ctx.lineTo(getX(data[i].hour), getY(data[i].natural));
+ }
+ ctx.closePath();
+ 
+ const boostGrad = ctx.createLinearGradient(0, getY(0.9), 0, getY(0.2));
+ boostGrad.addColorStop(0, 'rgba(52, 211, 153, 0.9)');
+ boostGrad.addColorStop(0.5, 'rgba(16, 185, 129, 0.6)');
+ boostGrad.addColorStop(1, 'rgba(5, 150, 105, 0.2)');
+ ctx.fillStyle = boostGrad;
+ ctx.fill();
+ 
+ ctx.save();
+ ctx.shadowColor = 'rgba(52, 211, 153, 0.8)';
+ ctx.shadowBlur = 20;
+ ctx.beginPath();
+ ctx.strokeStyle = '#6EE7B7';
+ ctx.lineWidth = 3;
+ ctx.lineCap = 'round';
+ ctx.lineJoin = 'round';
+ data.forEach((p, i) => {
+ const x = getX(p.hour);
+ const y = getY(p.total);
+ if(i===0) ctx.moveTo(x, y);
+ else {
+ const prev = data[i-1];
+ const prevX = getX(prev.hour);
+ const prevY = getY(prev.total);
+ const cpX = (prevX + x) / 2;
+ ctx.quadraticCurveTo(cpX, prevY, x, y);
+ }
+ });
+ ctx.stroke();
+ ctx.restore();
+ 
+ const nowHour = 14.5;
+ const nowX = getX(nowHour);
+ const nowY = getY(data.find(p => Math.abs(p.hour - nowHour) < 0.5)?.total || 0.6);
+ 
+ ctx.save();
+ ctx.shadowColor = 'rgba(255,255,255,0.9)';
+ ctx.shadowBlur = 25;
+ ctx.beginPath();
+ ctx.arc(nowX, nowY, 6, 0, Math.PI*2);
+ ctx.fillStyle = '#ffffff';
+ ctx.fill();
+ ctx.restore();
+ 
+ ctx.beginPath();
+ ctx.arc(nowX, nowY, 4, 0, Math.PI*2);
+ ctx.fillStyle = '#10B981';
+ ctx.fill();
+ 
+ const lineGrad = ctx.createLinearGradient(nowX, padding.top, nowX, height-padding.bottom);
+ lineGrad.addColorStop(0, 'rgba(255,255,255,0)');
+ lineGrad.addColorStop(0.3, 'rgba(255,255,255,0.3)');
+ lineGrad.addColorStop(0.5, 'rgba(255,255,255,0.8)');
+ lineGrad.addColorStop(0.7, 'rgba(255,255,255,0.3)');
+ lineGrad.addColorStop(1, 'rgba(255,255,255,0)');
+ ctx.beginPath();
+ ctx.strokeStyle = lineGrad;
+ ctx.lineWidth = 2;
+ ctx.moveTo(nowX, padding.top);
+ ctx.lineTo(nowX, height - padding.bottom);
+ ctx.stroke();
+ 
+ const labelY = padding.top - 25;
+ ctx.fillStyle = 'rgba(16, 185, 129, 0.9)';
+ ctx.beginPath();
+ ctx.roundRect(nowX - 25, labelY - 10, 50, 20, 10);
+ ctx.fill();
+ ctx.beginPath();
+ ctx.moveTo(nowX - 5, labelY + 10);
+ ctx.lineTo(nowX + 5, labelY + 10);
+ ctx.lineTo(nowX, labelY + 15);
+ ctx.closePath();
+ ctx.fill();
+ 
+ ctx.fillStyle = '#ffffff';
+ ctx.font = 'bold 10px Inter';
+ ctx.textAlign = 'center';
+ ctx.textBaseline = 'middle';
+ ctx.fillText('NOW', nowX, labelY);
+ 
+ ctx.fillStyle = 'rgba(255,255,255,0.4)';
+ ctx.font = '10px Inter';
+ ctx.textAlign = 'center';
+ [0, 6, 12, 18, 24].forEach(h => {
+ const x = getX(h);
+ ctx.fillText(h + ':00', x, height - 10);
+ ctx.beginPath();
+ ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+ ctx.moveTo(x, height - padding.bottom);
+ ctx.lineTo(x, height - padding.bottom + 5);
+ ctx.stroke();
+ });
+ 
+ ctx.textAlign = 'right';
+ ctx.fillStyle = 'rgba(255,255,255,0.5)';
+ [0, 0.3, 0.6, 0.9].forEach((v, i) => {
+ const y = getY(v);
+ const labels = ['0', '200', '400', '600'];
+ ctx.fillText(labels[i], padding.left - 10, y + 3);
+ });
+ 
+ ctx.save();
+ ctx.translate(15, height/2);
+ ctx.rotate(-Math.PI/2);
+ ctx.textAlign = 'center';
+ ctx.font = '9px Inter';
+ ctx.fillStyle = 'rgba(255,255,255,0.3)';
+ ctx.fillText('PPFD (μmol·m⁻²·s⁻¹)', 0, 0);
+ ctx.restore();
+ }
+
+ function initChartInteraction() {
+ const canvas = document.getElementById('ppfdCanvasDisplay');
+ const tooltip = document.getElementById('chartTooltip');
+ const container = document.getElementById('chartContainer');
+ 
+ if(!canvas || !tooltip) return;
+ 
+ canvas.addEventListener('mousemove', function(e) {
+ const rect = canvas.getBoundingClientRect();
+ const x = (e.clientX - rect.left) * window.devicePixelRatio;
+ const width = canvas.width;
+ const padding = {top: 40, bottom: 30, left: 50, right: 20};
+ const chartW = width - padding.left - padding.right;
+ 
+ const hour = ((x - padding.left) / chartW) * 24;
+ if(hour >= 0 && hour <= 24) {
+ const data = generateSmoothCurve();
+ const point = data.reduce((prev, curr) => 
+ Math.abs(curr.hour - hour) < Math.abs(prev.hour - hour) ? curr : prev
+ );
+ 
+ if(Math.abs(point.hour - hour) < 0.5) {
+ tooltip.style.display = 'block';
+ tooltip.style.left = (e.clientX - rect.left + 10) + 'px';
+ tooltip.style.top = (e.clientY - rect.top - 40) + 'px';
+ tooltip.innerHTML = `
+ <div class="font-bold text-green-400">${Math.round(point.hour)}:00</div>
+ <div class="text-[10px] mt-1">自然光: ${(point.natural * 700).toFixed(0)} μmol</div>
+ <div class="text-[10px]">补光: ${(point.boost * 700).toFixed(0)} μmol</div>
+ <div class="text-[10px] text-white/70">总计: ${(point.total * 700).toFixed(0)} μmol</div>
+ `;
+ } else {
+ tooltip.style.display = 'none';
+ }
+ }
+ });
+ 
+ canvas.addEventListener('mouseleave', function() {
+ tooltip.style.display = 'none';
+ });
+ }
+
+ function initHeatmap() {
+ const canvas = document.getElementById('heatmapCanvas');
+ if(!canvas) return;
+ 
+ const container = document.getElementById('heatmapContainer');
+ const rect = container.getBoundingClientRect();
+ canvas.width = rect.width * window.devicePixelRatio;
+ canvas.height = rect.height * window.devicePixelRatio;
+ 
+ const ctx = canvas.getContext('2d');
+ ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+ 
+ drawConcentricHeatmap(currentCenterPPFD);
+ initHeatmapInteraction();
+ }
+
+ function drawConcentricHeatmap(centerValue) {
+ const canvas = document.getElementById('heatmapCanvas');
+ if(!canvas) return;
+ const ctx = canvas.getContext('2d');
+ const width = canvas.width / window.devicePixelRatio;
+ const height = canvas.height / window.devicePixelRatio;
+ 
+ ctx.clearRect(0, 0, width, height);
+ 
+ const centerX = width / 2;
+ const centerY = height / 3;
+ 
+ const zones = [
+ { radius: 0.25, color: [239, 68, 68], label: '400+', alpha: 0.6 },
+ { radius: 0.4, color: [234, 179, 8], label: '300', alpha: 0.5 },
+ { radius: 0.55, color: [34, 197, 94], label: '200', alpha: 0.4 },
+ { radius: 0.75, color: [59, 130, 246], label: '100', alpha: 0.3 },
+ { radius: 1.0, color: [30, 58, 138], label: '0', alpha: 0.2 }
+ ];
+ 
+ for(let i = zones.length - 1; i >= 0; i--) {
+ const zone = zones[i];
+ const r = Math.min(width, height) * zone.radius * 0.45;
+ 
+ const grad = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, r);
+ const [rC, gC, bC] = zone.color;
+ grad.addColorStop(0, `rgba(${rC}, ${gC}, ${bC}, ${zone.alpha})`);
+ grad.addColorStop(0.7, `rgba(${rC}, ${gC}, ${bC}, ${zone.alpha * 0.6})`);
+ grad.addColorStop(1, `rgba(${rC}, ${gC}, ${bC}, 0)`);
+ 
+ ctx.fillStyle = grad;
+ ctx.beginPath();
+ ctx.arc(centerX, centerY, r, 0, Math.PI * 2);
+ ctx.fill();
+ 
+ ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+ ctx.lineWidth = 1.5;
+ ctx.beginPath();
+ ctx.arc(centerX, centerY, r * 0.85, 0, Math.PI * 2);
+ ctx.stroke();
+ 
+ const labelRadius = r * 0.85;
+ ctx.fillStyle = 'rgba(255,255,255,0.8)';
+ ctx.font = 'bold 11px Inter';
+ ctx.textAlign = 'center';
+ ctx.textBaseline = 'middle';
+ ctx.fillText(zone.label, centerX + labelRadius + 15, centerY);
+ }
+ 
+ const lightGlow = ctx.createRadialGradient(centerX, centerY, 0, centerX, centerY, 40);
+ lightGlow.addColorStop(0, 'rgba(255,255,255,0.9)');
+ lightGlow.addColorStop(0.3, 'rgba(255,255,200,0.4)');
+ lightGlow.addColorStop(1, 'rgba(255,255,200,0)');
+ ctx.fillStyle = lightGlow;
+ ctx.beginPath();
+ ctx.arc(centerX, centerY, 40, 0, Math.PI * 2);
+ ctx.fill();
+ 
+ ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+ ctx.lineWidth = 0.5;
+ for(let x = 0; x <= width; x += width/12) {
+ ctx.beginPath();
+ ctx.moveTo(x, 0);
+ ctx.lineTo(x, height);
+ ctx.stroke();
+ }
+ for(let y = 0; y <= height; y += height/8) {
+ ctx.beginPath();
+ ctx.moveTo(0, y);
+ ctx.lineTo(width, y);
+ ctx.stroke();
+ }
+ 
+ ctx.strokeStyle = 'rgba(255,255,255,0.2)';
+ ctx.setLineDash([5, 5]);
+ ctx.lineWidth = 1;
+ ctx.beginPath();
+ ctx.moveTo(centerX, centerY);
+ ctx.lineTo(width * 0.15, height * 0.85);
+ ctx.stroke();
+ ctx.beginPath();
+ ctx.moveTo(centerX, centerY);
+ ctx.lineTo(width * 0.85, height * 0.85);
+ ctx.stroke();
+ ctx.setLineDash([]);
+ 
+ ctx.fillStyle = 'rgba(255,255,255,0.6)';
+ ctx.font = '9px Inter';
+ ctx.textAlign = 'center';
+ ctx.fillText(`${centerValue}`, centerX, centerY - 15);
+ 
+ ctx.fillStyle = 'rgba(255,255,255,0.4)';
+ ctx.font = '10px Inter';
+ ctx.fillText('N', centerX, 15);
+ ctx.fillText('S', centerX, height - 10);
+ ctx.fillText('W', 10, centerY);
+ ctx.fillText('E', width - 10, centerY);
+ }
+
+ function initHeatmapInteraction() {
+ const container = document.getElementById('heatmapContainer');
+ const canvas = document.getElementById('heatmapCanvas');
+ const tooltip = document.getElementById('heatmapTooltip');
+ 
+ container.addEventListener('mousemove', function(e) {
+ const rect = canvas.getBoundingClientRect();
+ const x = e.clientX - rect.left;
+ const y = e.clientY - rect.top;
+ const width = rect.width;
+ const height = rect.height;
+ 
+ const centerX = width / 2;
+ const centerY = height / 3;
+ 
+ const dx = x - centerX;
+ const dy = y - centerY;
+ const dist = Math.sqrt(dx*dx + dy*dy);
+ const maxDist = Math.min(width, height) * 0.45;
+ 
+ let intensity = currentCenterPPFD * (1 - dist/maxDist * 0.8);
+ intensity = Math.max(50, Math.min(currentCenterPPFD, intensity));
+ 
+ const cmX = ((x - centerX) / width * 60).toFixed(0);
+ const cmY = ((y - centerY) / height * 40).toFixed(0);
+ 
+ tooltip.style.display = 'block';
+ tooltip.style.left = (x + 15) + 'px';
+ tooltip.style.top = (y - 10) + 'px';
+ 
+ let statusColor = 'text-green-400';
+ let statusText = '✓ 光照充足';
+ if(intensity < 200) {
+ statusColor = 'text-blue-400';
+ statusText = '✗ 光照不足';
+ } else if(intensity < 300) {
+ statusColor = 'text-yellow-400';
+ statusText = '⚠ 中等偏低';
+ }
+ 
+ tooltip.innerHTML = `
+ <div class="text-gray-400 text-[10px] mb-1">坐标: ${cmX}cm, ${cmY}cm</div>
+ <div class="text-lg font-bold text-white">${Math.round(intensity)} <span class="text-xs font-normal text-gray-400">μmol/m²s</span></div>
+ <div class="text-[10px] mt-1 ${statusColor}">${statusText}</div>
+ `;
+ });
+ 
+ container.addEventListener('mouseleave', function() {
+ tooltip.style.display = 'none';
+ });
+ }
+
+ function showPlantDetail(name, ppfd) {
+ let suggestion = '';
+ if(name === '散尾葵') {
+ suggestion = '建议向中心移动 8-10cm 以提升 40% 光照';
+ } else if(name === '绿萝') {
+ suggestion = '当前位置适宜，光合效率良好';
+ } else {
+ suggestion = '位于最佳光照区，无需调整';
+ }
+ 
+ showToast(`${name}: ${ppfd} μmol/m²s - ${suggestion}`);
+ }
+
+ function updateHeatmap(value) {
+ currentCenterPPFD = parseInt(value);
+ document.getElementById('centerPPFD').textContent = value + ' μmol/m²s';
+ document.getElementById('centerDisplay').textContent = value;
+ drawConcentricHeatmap(currentCenterPPFD);
+ 
+ document.querySelectorAll('.ar-plant-marker').forEach(marker => {
+ const originalPPFD = parseInt(marker.querySelector('.text-lg').textContent);
+ const ratio = value / 480;
+ const newPPFD = Math.round(originalPPFD * ratio);
+ 
+ const card = marker.querySelector('.ar-data-card');
+ const valueEl = card.querySelector('.text-lg');
+ const dot = card.querySelector('span[class*="rounded-full"]');
+ 
+ valueEl.textContent = newPPFD;
+ 
+ let colorClass = 'text-orange-400';
+ let dotColor = 'bg-orange-500';
+ let bgColor = 'bg-orange-500/30';
+ 
+ if(newPPFD < 250) {
+ colorClass = 'text-blue-400';
+ dotColor = 'bg-blue-500';
+ bgColor = 'bg-blue-500/30';
+ } else if(newPPFD < 350) {
+ colorClass = 'text-yellow-400';
+ dotColor = 'bg-yellow-500';
+ bgColor = 'bg-yellow-500/30';
+ } else if(newPPFD < 450) {
+ colorClass = 'text-green-400';
+ dotColor = 'bg-green-500';
+ bgColor = 'bg-green-500/30';
+ }
+ 
+ valueEl.className = `text-lg font-bold ${colorClass} leading-none`;
+ if(dot) dot.className = `w-1.5 h-1.5 rounded-full ${dotColor}`;
+ marker.querySelector('.ar-plant-icon').className = `ar-plant-icon ${bgColor}`;
+ });
+ }
+
+ function applyHeatmapSettings() {
+ showToast('AR光照配置已应用');
+ navigate('plants');
+ }
+
+ function optimizeLayout() {
+ showToast('AR分析中：建议将散尾葵向光源方向移动 8cm');
+ setTimeout(() => {
+ showToast('预计可提升 PPFD 至 320 μmol/m²s');
+ }, 1500);
+ }
+
+ function toggleLightPower() {
+ isLightOn = !isLightOn;
+ const btn = document.getElementById('lightPowerBtn');
+ const dot = btn.querySelector('div');
+ if(isLightOn) {
+ btn.classList.remove('bg-gray-600');
+ btn.classList.add('bg-green-600');
+ dot.style.transform = 'translateX(0)';
+ document.getElementById('light-status').textContent = '运行中 · 功率58W';
+ drawConcentricHeatmap(currentCenterPPFD);
+ } else {
+ btn.classList.remove('bg-green-600');
+ btn.classList.add('bg-gray-600');
+ dot.style.transform = 'translateX(-24px)';
+ document.getElementById('light-status').textContent = '已关闭';
+ drawConcentricHeatmap(0);
+ }
+ }
+
+ function updateSpectrum(type, value) {
+ if(type === 'blue') document.getElementById('blueValue').textContent = value + '%';
+ else if(type === 'cct') document.getElementById('cctValue').textContent = value + 'K';
+ else if(type === 'farred') document.getElementById('farRedValue').textContent = value + 'h/夜';
+ }
+
+ function resetApp() {
+ if(confirm('确定重置所有数据？')) {
+ hasPlants = false;
+ startOnboarding();
+ }
+ }
+
+ function showToast(msg) {
+ const toast = document.createElement('div');
+ toast.className = 'fixed top-16 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-full text-xs shadow-lg z-50 border border-white/10';
+ toast.textContent = msg;
+ document.body.appendChild(toast);
+ setTimeout(() => toast.remove(), 2000);
+ }
+ </script>
+</body>
+</html>

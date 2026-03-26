@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>AeroGrow Pro - 光控算法验证实验方案</title>
+ <script src="https://cdn.tailwindcss.com"></script>
+ <style>
+ @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;700&display=swap');
+ * { font-family: 'Inter', sans-serif; }
+ .mono { font-family: 'JetBrains Mono', monospace; }
+ 
+ body {
+ background: linear-gradient(180deg, #0f172a 0%, #1e1b4b 100%);
+ color: white;
+ min-height: 100vh;
+ }
+ 
+ .glass {
+ background: rgba(255, 255, 255, 0.06);
+ backdrop-filter: blur(12px);
+ border: 1px solid rgba(255, 255, 255, 0.1);
+ }
+ 
+ .section-header {
+ background: linear-gradient(135deg, rgba(16, 185, 129, 0.2) 0%, rgba(59, 130, 246, 0.2) 100%);
+ border: 1px solid rgba(16, 185, 129, 0.3);
+ }
+ 
+ .table-container {
+ overflow-x: auto;
+ }
+ 
+ .data-table {
+ width: 100%;
+ border-collapse: collapse;
+ font-size: 0.875rem;
+ }
+ 
+ .data-table th {
+ background: rgba(255,255,255,0.08);
+ padding: 0.75rem;
+ text-align: left;
+ font-weight: 600;
+ border-bottom: 1px solid rgba(255,255,255,0.1);
+ }
+ 
+ .data-table td {
+ padding: 0.75rem;
+ border-bottom: 1px solid rgba(255,255,255,0.05);
+ }
+ 
+ .data-table tr:hover td {
+ background: rgba(255,255,255,0.03);
+ }
+ 
+ .formula {
+ background: rgba(0,0,0,0.3);
+ padding: 0.25rem 0.5rem;
+ border-radius: 0.25rem;
+ font-family: 'JetBrains Mono', monospace;
+ color: #fbbf24;
+ }
+ 
+ .key-point {
+ border-left: 3px solid #10b981;
+ padding-left: 1rem;
+ }
+ 
+ .warning-point {
+ border-left: 3px solid #f59e0b;
+ padding-left: 1rem;
+ }
+ </style>
+</head>
+<body class="py-12 px-6">
+
+ <div class="max-w-5xl mx-auto">
+ <!-- 标题 -->
+ <div class="text-center mb-12">
+ <div class="w-16 h-16 bg-gradient-to-br from-green-400 to-blue-600 rounded-2xl mx-auto mb-6 flex items-center justify-center text-3xl">
+ 🧪
+ </div>
+ <h1 class="text-3xl font-bold mb-4">AeroGrow Pro 光控算法验证实验方案</h1>
+ <p class="text-gray-400">可复现的桌面模拟实验，验证超声波测距与光场控制的匹配性</p>
+ </div>
+
+ <!-- 实验目标 -->
+ <div class="glass rounded-2xl p-8 mb-8">
+ <h2 class="text-xl font-bold mb-6 flex items-center gap-3">
+ <span class="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center text-green-400">🎯</span>
+ 实验目标
+ </h2>
+ <div class="space-y-4">
+ <div class="key-point">
+ <strong class="text-green-400">验证</strong> 超声波中心点测距能否代表有效照射面的平均距离
+ </div>
+ <div class="key-point">
+ <strong class="text-green-400">标定</strong> 距离-PPFD 查找表（LUT），建立实际控制曲线
+ </div>
+ <div class="key-point">
+ <strong class="text-green-400">验证</strong> 环境光叠加计算模型的误差范围
+ </div>
+ </div>
+ </div>
+
+ <!-- 实验器材清单 -->
+ <div class="glass rounded-2xl p-8 mb-8">
+ <h2 class="text-xl font-bold mb-6 flex items-center gap-3">
+ <span class="w-8 h-8 bg-blue-500/20 rounded-lg flex items-center justify-center text-blue-400">📋</span>
+ 实验器材清单
+ </h2>
+ 
+ <div class="table-container">
+ <table class="data-table">
+ <thead>
+ <tr>
+ <th>类别</th>
+ <th>器材</th>
+ <th>规格/型号建议</th>
+ <th>数量</th>
+ <th>备注</th>
+ </tr>
+ </thead>
+ <tbody>
+ <tr>
+ <td>测距</td>
+ <td>超声波模块</td>
+ <td class="mono">HC-SR04 (CS100A)</td>
+ <td>1</td>
+ <td>与方案一致</td>
+ </tr>
+ <tr>
+ <td>光源</td>
+ <td>LED植物灯</td>
+ <td>可调光（PWM 0-100%），功率 30-50W</td>
+ <td>1</td>
+ <td>全光谱或红蓝光</td>
+ </tr>
+ <tr>
+ <td>测光</td>
+ <td>量子传感器/照度计</td>
+ <td>SQ-520 或 Li-250A（租赁）</td>
+ <td>1</td>
+ <td class="text-yellow-400">必须测 PPFD，非 lux</td>
+ </tr>
+ <tr>
+ <td>参考</td>
+ <td>卷尺/激光测距仪</td>
+ <td>精度 1mm</td>
+ <td>1</td>
+ <td>作为真值</td>
+ </tr>
+ <tr>
+ <td>标定</td>
+ <td>白色硬纸板</td>
+ <td>A3 大小，模拟叶片</td>
+ <td>3</td>
+ <td>代替真实植物</td>
+ </tr>
+ <tr>
+ <td>环境</td>
+ <td>可调光台灯</td>
+ <td>模拟环境光（3000-6500K）</td>
+ <td>1</td>
+ <td>侧向照射</td>
+ </tr>
+ <tr>
+ <td>记录</td>
+ <td>手机/相机</td>
+ <td>固定机位拍摄</td>
+ <td>1</td>
+ <td>记录光斑形态</td>
+ </tr>
+ <tr>
+ <td>支架</td>
+ <td>三脚架/龙门架</td>
+ <td>可调节高度 20-100cm</td>
+ <td>1</td>
+ <td>固定灯体</td>
+ </tr>
+ </tbody>
+ </table>
+ </div>
+ 
+ <div class="mt-6 p-4 bg-blue-900/30 rounded-lg border border-blue-500/30">
+ <p class="text-sm text-blue-300">
+ <strong>💡 预算控制：</strong>若无量子传感器，可用<span class="text-white">手机APP光强仪</span>（如"Light Meter"）+ 太阳光标定替代，精度降低但趋势可验证。
+ </p>
+ </div>
+ </div>
+
+ <!-- 实验一 -->
+ <div class="glass rounded-2xl p-8 mb-8">
+ <div class="section-header rounded-xl p-4 mb-6">
+ <h2 class="text-xl font-bold flex items-center gap-3">
+ <span class="text-2xl">🔍</span>
+ 实验一：光轴-测距轴一致性验证
+ </h2>
+ <p class="text-sm text-gray-400 mt-2">核心问题：超声波15°波束与LED 60-120°光斑的匹配度</p>
+ </div>
+ 
+ <h3 class="font-semibold text-lg mb-4 text-green-400">实验步骤</h3>
+ <ol class="space-y-3 text-sm text-gray-300 mb-6">
+ <li><strong>搭建测试台：</strong>LED 灯固定于龙门架，距桌面高度可调（20-80cm）；超声波模块安装于 LED 基板几何中心，发射面向下；桌面铺设坐标纸（10cm×10cm 网格）</li>
+ <li><strong>光斑测绘（关闭环境光）：</strong>高度设定：30cm、50cm、70cm 三档；每档用照度计测量网格交点处的 PPFD，绘制等值线图；标记光斑中心（最强点）与几何中心偏移量</li>
+ <li><strong>超声波测距验证：</strong>在光斑范围内放置硬纸板于不同位置（中心点、边缘点、倾斜 30°），记录超声波读数 vs 激光测距真值</li>
+ <li><strong>多目标测试（关键）：</strong>同时放置 3 张硬纸板于不同高度，观察超声波返回值（是最近？最远？还是平均值？）</li>
+ </ol>
+ 
+ <h3 class="font-semibold text-lg mb-4 text-blue-400">数据记录表</h3>
+ <div class="table-container">
+ <table class="data-table">
+ <thead>
+ <tr>
+ <th>测试组</th>
+ <th>灯高 (cm)</th>
+ <th>目标位置</th>
+ <th>激光真值 (cm)</th>
+ <th>超声读数 (cm)</th>
+ <th>偏差 (cm)</th>
+ <th>光强 (μmol)</th>
+ <th>备注</th>
+ </tr>
+ </thead>
+ <tbody class="mono">
+ <tr>
+ <td>1</td>
+ <td>30</td>
+ <td>中心(0,0)</td>
+ <td>30.0</td>
+ <td></td>
+ <td></td>
+ <td></td>
+ <td>基准</td>
+ </tr>
+ <tr>
+ <td>2</td>
+ <td>30</td>
+ <td>边缘(10,0)</td>
+ <td>31.6</td>
+ <td></td>
+ <td></td>
+ <td></td>
+ <td>几何距离</td>
+ </tr>
+ <tr>
+ <td>3</td>
+ <td>30</td>
+ <td>边缘(20,0)</td>
+ <td>36.1</td>
+ <td></td>
+ <td></td>
+ <td></td>
+ <td>几何距离</td>
+ </tr>
+ <tr>
+ <td>4</td>
+ <td>30</td>
+ <td>倾斜30°</td>
+ <td>30.0</td>
+ <td></td>
+ <td></td>
+ <td></td>
+ <td>表面法向</td>
+ </tr>
+ <tr>
+ <td>5</td>
+ <td>50</td>
+ <td>多目标(20/50/80)</td>
+ <td>-</td>
+ <td></td>
+ <td></td>
+ <td></td>
+ <td>观察回波特性</td>
+ </tr>
+ </tbody>
+ </table>
+ </div>
+ 
+ <div class="mt-6 p-4 bg-green-900/30 rounded-lg border border-green-500/30">
+ <p class="text-sm text-green-300 mb-2"><strong>预期结论（用于算法修正）：</strong></p>
+ <ul class="text-sm text-gray-300 space-y-1">
+ <li>• 若超声始终返回<strong class="text-white">最近距离</strong>，算法需采用 d_max 补偿策略（防止高株灼伤）</li>
+ <li>• 若光斑中心与几何中心偏移 > 5cm，需机械调整超声安装位置</li>
+ </ul>
+ </div>
+ </div>
+
+ <!-- 实验二 -->
+ <div class="glass rounded-2xl p-8 mb-8">
+ <div class="section-header rounded-xl p-4 mb-6">
+ <h2 class="text-xl font-bold flex items-center gap-3">
+ <span class="text-2xl">📊</span>
+ 实验二：距离-PPFD 标定与叠加计算
+ </h2>
+ <p class="text-sm text-gray-400 mt-2">核心问题：PPFD_total = PPFD_led + PPFD_ambient 是否成立？</p>
+ </div>
+ 
+ <h3 class="font-semibold text-lg mb-4 text-green-400">实验步骤</h3>
+ <ol class="space-y-4 text-sm text-gray-300 mb-6">
+ <li>
+ <strong>基础标定（暗室）：</strong>调节灯高：20、30、40、50、60、80、100cm；每高度测量中心点 PPFD（LED 100% 亮度）；建立距离-PPFD 基础曲线（反平方律验证）
+ </li>
+ <li>
+ <strong>亮度线性度测试（固定高度 50cm）：</strong>LED 亮度：10%、25%、50%、75%、100%；测量各档 PPFD，验证 PWM 调光是否线性
+ </li>
+ <li>
+ <strong>环境光叠加验证（关键实验）：</strong>
+ <ul class="mt-2 space-y-2 ml-4">
+ <li><strong>组 A（静态环境光）：</strong>侧向放置环境光源（模拟窗户），调至 3 个档位；测量无 LED 时的基础 PPFD_amb；开启 LED（50% 亮度），测量 PPFD_total；验证：PPFD_total = PPFD_amb + PPFD_led（单独测量值）</li>
+ <li><strong>组 B（动态闭环模拟）：</strong>设定目标 PPFD_target = 300 μmol；手动调节环境光变化，用实验数据计算所需 LED 亮度：B% = (300 - PPFD_amb) / PPFD_led(100%) × 100%</li>
+ </ul>
+ </li>
+ </ol>
+ 
+ <div class="grid md:grid-cols-2 gap-6">
+ <div>
+ <h3 class="font-semibold text-lg mb-4 text-blue-400">表 2-1：距离-PPFD 基础标定</h3>
+ <div class="table-container">
+ <table class="data-table">
+ <thead>
+ <tr>
+ <th>距离(cm)</th>
+ <th>实测PPFD</th>
+ <th>理论值</th>
+ <th>偏差</th>
+ </tr>
+ </thead>
+ <tbody class="mono">
+ <tr><td>20</td><td></td><td>100%</td><td></td></tr>
+ <tr><td>30</td><td></td><td>44%</td><td></td></tr>
+ <tr><td>50</td><td></td><td>16%</td><td></td></tr>
+ <tr><td>80</td><td></td><td>6.25%</td><td></td></tr>
+ </tbody>
+ </table>
+ </div>
+ </div>
+ 
+ <div>
+ <h3 class="font-semibold text-lg mb-4 text-blue-400">表 2-2：叠加验证（固定50cm）</h3>
+ <div class="table-container">
+ <table class="data-table">
+ <thead>
+ <tr>
+ <th>环境光</th>
+ <th>LED设定</th>
+ <th>理论输出</th>
+ <th>实测总值</th>
+ <th>误差</th>
+ </tr>
+ </thead>
+ <tbody class="mono">
+ <tr><td>0</td><td>60%</td><td>180</td><td></td><td></td></tr>
+ <tr><td>50</td><td>43%</td><td>129</td><td></td><td></td></tr>
+ <tr><td>100</td><td>27%</td><td>81</td><td></td><td></td></tr>
+ <tr><td>150</td><td>10%</td><td>30</td><td></td><td></td></tr>
+ </tbody>
+ </table>
+ </div>
+ <p class="text-xs text-gray-500 mt-2">* 假设 50cm 处 LED 100% = 300 μmol，目标总 PPFD = 180</p>
+ </div>
+ </div>
+ </div>
+
+ <!-- 实验三 -->
+ <div class="glass rounded-2xl p-8 mb-8">
+ <div class="section-header rounded-xl p-4 mb-6">
+ <h2 class="text-xl font-bold flex items-center gap-3">
+ <span class="text-2xl">🔄</span>
+ 实验三：闭环控制动态模拟
+ </h2>
+ <p class="text-sm text-gray-400 mt-2">模拟一天的自然光变化 + 自动补光</p>
+ </div>
+ 
+ <h3 class="font-semibold text-lg mb-4 text-green-400">脚本执行</h3>
+ <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+ <div class="glass rounded-lg p-4">
+ <div class="text-2xl mb-2">🌅</div>
+ <div class="font-semibold">8:00</div>
+ <p class="text-sm text-gray-400 mt-1">环境光 0，LED 输出 100%</p>
+ </div>
+ <div class="glass rounded-lg p-4">
+ <div class="text-2xl mb-2">☀️</div>
+ <div class="font-semibold">10:00</div>
+ <p class="text-sm text-gray-400 mt-1">PPFD_amb = 100，LED 降至 67%</p>
+ </div>
+ <div class="glass rounded-lg p-4">
+ <div class="text-2xl mb-2">🔥</div>
+ <div class="font-semibold">12:00</div>
+ <p class="text-sm text-gray-400 mt-1">PPFD_amb = 250，LED 降至 17%</p>
+ </div>
+ <div class="glass rounded-lg p-4">
+ <div class="text-2xl mb-2">🌤️</div>
+ <div class="font-semibold">14:00</div>
+ <p class="text-sm text-gray-400 mt-1">PPFD_amb = 150，LED 回升至 50%</p>
+ </div>
+ <div class="glass rounded-lg p-4">
+ <div class="text-2xl mb-2">🌆</div>
+ <div class="font-semibold">18:00</div>
+ <p class="text-sm text-gray-400 mt-1">环境光 0，LED 维持目标值或日落模式</p>
+ </div>
+ <div class="glass rounded-lg p-4">
+ <div class="text-2xl mb-2">📈</div>
+ <div class="font-semibold">误差监测</div>
+ <p class="text-sm text-gray-400 mt-1">每 10 分钟记录，计算 RMSE</p>
+ </div>
+ </div>
+ </div>
+
+ <!-- 数据分析与算法修正 -->
+ <div class="glass rounded-2xl p-8 mb-8">
+ <h2 class="text-xl font-bold mb-6 flex items-center gap-3">
+ <span class="w-8 h-8 bg-purple-500/20 rounded-lg flex items-center justify-center text-purple-400">⚙️</span>
+ 数据分析与算法修正
+ </h2>
+ 
+ <div class="space-y-6">
+ <div class="warning-point">
+ <h3 class="font-semibold text-lg mb-2 text-amber-400">1. LUT 修正</h3>
+ <p class="text-sm text-gray-300 mb-3">若实测 PPFD_实测 与理论 偏差 > 15%，采用<span class="text-white font-semibold">分段线性插值</span>替代公式：</p>
+ <pre class="bg-black/40 rounded-lg p-4 text-xs mono text-green-400 overflow-x-auto"># 基于实验数据的 LUT（示例）
+PPFD_TABLE = {
+    20: 820,   # 实测值
+    30: 480,   # 非理论 365，因透镜聚光
+    40: 310,
+    50: 215,
+    60: 155,
+    80: 85,
+    100: 55
+}</pre>
+ </div>
+ 
+ <div class="warning-point">
+ <h3 class="font-semibold text-lg mb-2 text-amber-400">2. 环境光系数修正</h3>
+ <p class="text-sm text-gray-300">若发现 PPFD_total ≠ PPFD_led + PPFD_amb，引入修正系数 α：</p>
+ <div class="formula inline-block mt-2">PPFD_total = PPFD_led + α × PPFD_amb</div>
+ <p class="text-sm text-gray-400 mt-2">通过实验二数据拟合 α（通常在 0.9-1.1 之间）</p>
+ </div>
+ 
+ <div class="warning-point">
+ <h3 class="font-semibold text-lg mb-2 text-amber-400">3. 超声波补偿策略</h3>
+ <p class="text-sm text-gray-300">若实验一发现多目标时超声返回<span class="text-white">最近距离</span>（d_nearest），而光斑边缘实际距离为 d_edge，算法应保守取：</p>
+ <div class="formula inline-block mt-2">d_safe = min(d_edge, d_nearest + margin)</div>
+ <p class="text-sm text-gray-400 mt-2">防止边缘植物光照不足</p>
+ </div>
+ </div>
+ </div>
+
+ <!-- 实验报告模板 -->
+ <div class="glass rounded-2xl p-8 mb-8 border border-green-500/30">
+ <h2 class="text-xl font-bold mb-6 flex items-center gap-3">
+ <span class="w-8 h-8 bg-green-500/20 rounded-lg flex items-center justify-center text-green-400">📝</span>
+ 实验报告模板
+ </h2>
+ 
+ <div class="space-y-6">
+ <div>
+ <h3 class="font-semibold text-green-400 mb-2">摘要</h3>
+ <p class="text-sm text-gray-300">验证超声波中心测距结合环境光补偿的控制策略，实测目标 PPFD 达成率 92%，误差主要来源于环境光空间不均匀性。</p>
+ </div>
+ 
+ <div>
+ <h3 class="font-semibold text-green-400 mb-2">关键发现</h3>
+ <ol class="text-sm text-gray-300 space-y-2">
+ <li>1. 光斑中心与几何中心偏移 2cm，在可接受范围</li>
+ <li>2. 距离-PPFD 关系在 30-80cm 范围接近 <span class="formula">1/d</span>（非平方反比，因非点光源）</li>
+ <li>3. 环境光叠加误差 < 8%，满足 DLI 日累积控制精度要求</li>
+ </ol>
+ </div>
+ 
+ <div>
+ <h3 class="font-semibold text-green-400 mb-2">算法优化建议</h3>
+ <ul class="text-sm text-gray-300 space-y-2">
+ <li>• 增加<span class="text-white">温度补偿</span>（LED 光效随温升降低，约 -0.3%/℃）</li>
+ <li>• 增加<span class="text-white">时间积分</span>（10 分钟调节周期平滑波动）</li>
+ </ul>
+ </div>
+ </div>
+ </div>
+
+ <!-- 时间估计 -->
+ <div class="glass rounded-2xl p-6 border border-blue-500/30">
+ <div class="flex items-center gap-3 mb-4">
+ <span class="text-2xl">⏱️</span>
+ <h3 class="font-bold text-lg">时间估计</h3>
+ </div>
+ <p class="text-sm text-gray-300">此方案可在 <span class="text-white font-semibold">2-3 小时</span> 内完成核心验证。如需 Python/MATLAB 数据分析脚本模板，请告知卡维斯。</p>
+ </div>
+
+ </div>
+
+</body>
+</html>
